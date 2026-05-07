@@ -3,38 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Интерактивная карта ядерных полигонов и испытаний | Русские названия</title>
+    <title>Интерактивная карта ядерных полигонов — Русские названия</title>
     
-    <!-- Leaflet CSS + JS -->
+    <!-- Leaflet + MarkerCluster -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- MarkerCluster CSS + JS (кластеризация) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     
-    <!-- Шрифты и стили -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #1a2a32;
-            height: 100vh;
-            width: 100%;
-            overflow: hidden;
-        }
-        #map {
-            height: 100vh;
-            width: 100%;
-            z-index: 1;
-        }
-        /* Информационная панель внизу слева */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #1a2a32; height: 100vh; overflow: hidden; }
+        #map { height: 100vh; width: 100%; z-index: 1; }
+        
+        /* Инфо-панель внизу слева */
         .info-panel {
             position: absolute;
             bottom: 20px;
@@ -54,24 +38,10 @@
             border: 1px solid rgba(255,255,255,0.2);
             font-size: 0.85rem;
         }
-        .title h1 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-        }
-        .title p {
-            font-size: 0.7rem;
-            opacity: 0.8;
-            margin-top: 2px;
-        }
-        .stats {
-            background: rgba(0,0,0,0.5);
-            padding: 4px 12px;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            white-space: nowrap;
-        }
+        .title h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.3px; }
+        .title p { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; }
+        .stats { background: rgba(0,0,0,0.5); padding: 4px 12px; border-radius: 40px; font-size: 0.8rem; font-weight: 500; white-space: nowrap; }
+        
         /* Легенда справа внизу */
         .legend {
             position: absolute;
@@ -91,23 +61,8 @@
             line-height: 1.4;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
-        .legend span {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            background: #ff4d4d;
-            border-radius: 50%;
-            margin-right: 6px;
-            box-shadow: 0 0 4px rgba(255,80,80,0.8);
-        }
-        .legend .poly-badge {
-            background: none;
-            border: 2px solid #ffaa44;
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-            background: rgba(255,170,68,0.2);
-        }
+        .legend span { display: inline-block; width: 12px; height: 12px; background: #ff4d4d; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 4px rgba(255,80,80,0.8); }
+        .legend .poly-badge { background: none; border: 2px solid #ffaa44; width: 12px; height: 12px; border-radius: 2px; background: rgba(255,170,68,0.2); }
         .footer-attribution {
             position: absolute;
             bottom: 8px;
@@ -115,67 +70,45 @@
             transform: translateX(-50%);
             z-index: 1000;
             background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
             border-radius: 20px;
             padding: 4px 12px;
             font-size: 0.65rem;
             color: #ddd;
-            pointer-events: auto;
             font-family: monospace;
             white-space: nowrap;
-            backdrop-filter: blur(4px);
+            pointer-events: auto;
         }
-        /* Стиль для всплывающих окон с картинками */
-        .nuclear-popup-img {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 8px;
-            background: #f5f0e7;
-            padding: 6px 10px;
-            border-radius: 28px;
-        }
-        .flag-icon {
-            width: 30px;
-            height: 20px;
-            border-radius: 4px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-            object-fit: cover;
-        }
-        .nuclear-symbol {
-            font-size: 1.4rem;
-        }
+        .nuclear-popup-img { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; background: #f5f0e7; padding: 6px 10px; border-radius: 28px; }
+        .flag-icon { width: 30px; height: 20px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); object-fit: cover; }
+        .nuclear-symbol { font-size: 1.4rem; }
         @media (max-width: 700px) {
             .info-panel { padding: 6px 12px; bottom: 12px; left: 12px; gap: 8px; }
             .title h1 { font-size: 0.9rem; }
             .stats { font-size: 0.65rem; }
-            .legend { font-size: 0.6rem; }
+            .legend { font-size: 0.6rem; padding: 6px 10px; bottom: 12px; right: 12px; }
         }
+        .leaflet-control-layers { font-size: 12px; }
     </style>
 </head>
 <body>
     <div class="info-panel">
-        <div class="title">
-            <h1>☢️ Ядерные полигоны и испытания</h1>
-            <p>Исторические объекты ядерных взрывов (1945–2017)</p>
-        </div>
-        <div class="stats" id="siteCountDisplay">
-            📍 Загрузка...
-        </div>
+        <div class="title"><h1>☢️ Ядерные полигоны и испытания</h1><p>Исторические объекты ядерных взрывов (1945–2017)</p></div>
+        <div class="stats" id="siteCountDisplay">📍 Загрузка...</div>
     </div>
     <div class="legend">
         <div>🔴 <span></span> Места испытаний (кластеры)</div>
         <div>🟡 <span class="poly-badge"></span> Границы полигонов</div>
-        <div>💥 Данные: открытые источники / CTBTO</div>
+        <div>💥 Данные: открытые источники</div>
     </div>
     <div class="footer-attribution">
-        🗺️ Карта: OpenStreetMap Russia (русские названия)
+        🗺️ Карта: OpenStreetMap Russia / OSM (русские названия)
     </div>
-
     <div id="map"></div>
 
     <script>
         // --------------------------------------------------------------
-        // БАЗА ДАННЫХ: ядерные полигоны и места испытаний (все названия на русском)
+        // БАЗА ДАННЫХ: ядерные полигоны (все названия на русском)
         // --------------------------------------------------------------
         const testSites = [
             { name: "Полигон Тринити (первое ядерное испытание)", country: "США", lat: 33.678, lng: -106.475, years: "1945", tests: 1, type: "Атмосферный", desc: "«Тринити» — первый ядерный взрыв в истории (16 июля 1945)." },
@@ -187,7 +120,7 @@
             { name: "Остров Молден", country: "Кирибати", lat: 4.020, lng: -154.930, years: "1957–1958", tests: 3, type: "Атмосферные", desc: "Британские испытания «Грэппл»." },
             { name: "Семипалатинский полигон (СИП)", country: "Казахстан (СССР)", lat: 49.950, lng: 78.970, years: "1949–1989", tests: 456, type: "Атмосферные, подземные", desc: "Первый советский взрыв РДС-1." },
             { name: "Новая Земля (Северный полигон)", country: "Россия", lat: 73.400, lng: 54.850, years: "1955–1990", tests: 224, type: "Атмосферные, подземные", desc: "«Царь-бомба» (58 Мт, 1961)." },
-            { name: "Тоцкий полигон (войсковые учения)", country: "Россия (СССР)", lat: 52.810, lng: 52.700, years: "1954", tests: 1, type: "Войсковые учения", desc: "Единственные войсковые учения с реальным ядерным взрывом в СССР." },
+            { name: "Тоцкий полигон (войсковые учения)", country: "Россия (СССР)", lat: 52.810, lng: 52.700, years: "1954", tests: 1, type: "Войсковые учения", desc: "Единственные войсковые учения с ядерным взрывом в СССР." },
             { name: "Лобнор (полигон 221)", country: "Китай", lat: 41.530, lng: 88.700, years: "1964–1996", tests: 45, type: "Атмосферные, подземные", desc: "Первый китайский ядерный взрыв 1964 г." },
             { name: "Атолл Муруроа", country: "Франция", lat: -21.850, lng: -138.920, years: "1966–1996", tests: 181, type: "Атмосферные, подземные", desc: "Основной полигон Франции в Тихом океане." },
             { name: "Атолл Фангатауфа", country: "Франция", lat: -22.270, lng: -138.760, years: "1966–1996", tests: 13, type: "Подземные", desc: "Дополнительный атолл для мегатонных взрывов." },
@@ -204,25 +137,15 @@
             { name: "Дегелен (Семипалатинск)", country: "Казахстан", lat: 49.800, lng: 78.100, years: "1961–1989", tests: 215, type: "Подземные", desc: "Шахтные взрывы в горных выработках." }
         ];
 
-        // Функция для получения ссылки на флаг (русскоязычные страны)
         function getFlagUrl(countryName) {
-            const countryMap = {
-                "США": "us", "США (Маршалловы о-ва)": "mh", "Казахстан (СССР)": "kz",
-                "Казахстан": "kz", "Россия": "ru", "Россия (СССР)": "ru", "Китай": "cn",
-                "Франция": "fr", "Австралия (Великобритания)": "au", "Австралия": "au",
-                "Индия": "in", "Пакистан": "pk", "КНДР": "kp", "Кирибати": "ki"
-            };
-            let code = countryMap[countryName];
+            const map = { "США": "us", "США (Маршалловы о-ва)": "mh", "Казахстан (СССР)": "kz", "Казахстан": "kz", "Россия": "ru", "Россия (СССР)": "ru", "Китай": "cn", "Франция": "fr", "Австралия (Великобритания)": "au", "Австралия": "au", "Индия": "in", "Пакистан": "pk", "КНДР": "kp", "Кирибати": "ki" };
+            let code = map[countryName];
             return code ? `https://flagcdn.com/w40/${code}.png` : null;
         }
 
-        // Содержимое всплывающего окна с флагом и символом
         function getPopupContent(site) {
             const flagUrl = getFlagUrl(site.country);
             const flagHtml = flagUrl ? `<img class="flag-icon" src="${flagUrl}" alt="${site.country}">` : `<span style="font-size:1.4rem;">☢️</span>`;
-            const testInfo = site.tests ? `${site.tests} взрыв(а/ов)` : "нет данных";
-            const yearsInfo = site.years || "неизвестно";
-            const typeInfo = site.type || "разные типы";
             return `
                 <div style="min-width: 240px; max-width: 280px; font-family: 'Inter', sans-serif;">
                     <div class="nuclear-popup-img" style="display:flex; align-items:center; gap:8px; margin-bottom:12px; background:#f1ebe2; padding:6px 12px; border-radius: 40px;">
@@ -231,71 +154,65 @@
                         <strong style="font-size:0.85rem; margin-left:auto;">${site.country}</strong>
                     </div>
                     <h3 style="margin:0 0 8px 0; color:#d43f1f; border-left: 4px solid #ff6600; padding-left: 10px;">☢️ ${site.name}</h3>
-                    <p><strong>📅 Период:</strong> ${yearsInfo}</p>
-                    <p><strong>💥 Испытаний:</strong> ${testInfo}</p>
-                    <p><strong>⚡ Тип:</strong> ${typeInfo}</p>
+                    <p><strong>📅 Период:</strong> ${site.years || "неизвестно"}</p>
+                    <p><strong>💥 Испытаний:</strong> ${site.tests ? site.tests + " взрыв(а/ов)" : "нет данных"}</p>
+                    <p><strong>⚡ Тип:</strong> ${site.type || "разные типы"}</p>
                     <p style="margin:8px 0 5px; background:#fff1e0; padding:6px 10px; border-radius:12px;">📖 ${site.desc}</p>
                     <p style="font-size:0.7rem; color:#666; margin-top:6px;">📍 ${site.lat.toFixed(2)}°, ${site.lng.toFixed(2)}°</p>
                 </div>
             `;
         }
 
-        // --------------------------------------------------------------
-        // ГРАНИЦЫ ОСНОВНЫХ ПОЛИГОНОВ (с русскими названиями)
-        // --------------------------------------------------------------
+        // Границы полигонов
         const polygonsData = [
-            {
-                name: "Невадский полигон (приблизительная граница)",
-                color: "#ffaa44", weight: 2, opacity: 0.8, fillOpacity: 0.18,
-                coords: [[37.35, -116.68], [37.42, -116.25], [37.40, -115.95], [37.20, -115.88],
-                         [37.00, -115.92], [36.90, -116.10], [36.92, -116.40], [37.05, -116.62],
-                         [37.20, -116.75], [37.35, -116.68]]
-            },
-            {
-                name: "Семипалатинский полигон (контур)",
-                color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15,
-                coords: [[49.55, 77.95], [49.80, 78.30], [50.05, 78.65], [50.25, 79.00],
-                         [50.20, 79.28], [49.92, 79.35], [49.65, 79.20], [49.45, 78.75],
-                         [49.42, 78.35], [49.55, 77.95]]
-            },
-            {
-                name: "Новая Земля (зона испытаний)",
-                color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15,
-                coords: [[72.85, 53.20], [73.15, 55.25], [73.40, 57.80], [73.15, 59.30],
-                         [72.70, 59.50], [72.10, 58.20], [71.95, 55.50], [72.30, 53.00],
-                         [72.85, 53.20]]
-            },
-            {
-                name: "Лобнор (Китай)",
-                color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15,
-                coords: [[40.85, 88.05], [41.15, 88.40], [41.60, 88.80], [41.85, 89.25],
-                         [41.30, 89.70], [40.65, 89.30], [40.35, 88.75], [40.55, 88.15],
-                         [40.85, 88.05]]
-            },
-            {
-                name: "Муруроа и Фангатауфа (акватория)",
-                color: "#ffaa44", weight: 2, opacity: 0.6, fillOpacity: 0.1,
-                coords: [[-21.50, -139.20], [-21.30, -138.70], [-21.70, -138.30], [-22.20, -138.25],
-                         [-22.50, -138.70], [-22.30, -139.20], [-21.90, -139.40], [-21.50, -139.20]]
-            }
+            { name: "Невадский полигон (приблизительно)", color: "#ffaa44", weight: 2, opacity: 0.8, fillOpacity: 0.18, coords: [[37.35, -116.68], [37.42, -116.25], [37.40, -115.95], [37.20, -115.88], [37.00, -115.92], [36.90, -116.10], [36.92, -116.40], [37.05, -116.62], [37.20, -116.75], [37.35, -116.68]] },
+            { name: "Семипалатинский полигон (контур)", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[49.55, 77.95], [49.80, 78.30], [50.05, 78.65], [50.25, 79.00], [50.20, 79.28], [49.92, 79.35], [49.65, 79.20], [49.45, 78.75], [49.42, 78.35], [49.55, 77.95]] },
+            { name: "Новая Земля (зона испытаний)", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[72.85, 53.20], [73.15, 55.25], [73.40, 57.80], [73.15, 59.30], [72.70, 59.50], [72.10, 58.20], [71.95, 55.50], [72.30, 53.00], [72.85, 53.20]] },
+            { name: "Лобнор (Китай)", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[40.85, 88.05], [41.15, 88.40], [41.60, 88.80], [41.85, 89.25], [41.30, 89.70], [40.65, 89.30], [40.35, 88.75], [40.55, 88.15], [40.85, 88.05]] },
+            { name: "Муруроа и Фангатауфа (акватория)", color: "#ffaa44", weight: 2, opacity: 0.6, fillOpacity: 0.1, coords: [[-21.50, -139.20], [-21.30, -138.70], [-21.70, -138.30], [-22.20, -138.25], [-22.50, -138.70], [-22.30, -139.20], [-21.90, -139.40], [-21.50, -139.20]] }
         ];
 
         // --------------------------------------------------------------
-        // ИНИЦИАЛИЗАЦИЯ КАРТЫ С РУССКИМИ НАЗВАНИЯМИ
+        // ИНИЦИАЛИЗАЦИЯ КАРТЫ
         // --------------------------------------------------------------
         const map = L.map('map').setView([35, 20], 2.2);
 
-        // ГЛАВНОЕ: тайлы OpenStreetMap Russia с русскими подписями (HTTPS)
-        const russianTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.ru/{z}/{x}/{y}.png', {
+        // РУССКИЙ ТАЙЛОВЫЙ СЛОЙ (OpenStreetMap Russia, поддерживает кириллические названия)
+        const russianLayer = L.tileLayer('https://{s}.tile.openstreetmap.ru/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors, Russia',
             subdomains: 'abc',
             maxZoom: 18,
-            minZoom: 2
-        }).addTo(map);
+            minZoom: 2,
+            errorTileUrl: '', // для обработки ошибок
+        });
 
-        // Альтернативный слой (на всякий случай — стандартные OSM, но мы будем использовать только русские)
-        const defaultOsm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
+        // РЕЗЕРВНЫЙ СЛОЙ (стандартный OSM, если русский не загрузится)
+        const fallbackLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 18
+        });
+
+        // Добавляем русский слой сначала
+        let currentLayer = russianLayer;
+        let fallbackUsed = false;
+        russianLayer.addTo(map);
+
+        // Обработка ошибок загрузки тайлов: если хотя бы один тайл не загрузился, переключаемся на fallback
+        russianLayer.on('tileerror', function(err) {
+            if (!fallbackUsed) {
+                fallbackUsed = true;
+                map.removeLayer(russianLayer);
+                fallbackLayer.addTo(map);
+                currentLayer = fallbackLayer;
+                // Небольшое уведомление в консоль (не мешает интерфейсу)
+                console.warn("Русский слой временно недоступен, переключено на стандартную OSM карту.");
+                // Можно также добавить всплывающее сообщение, но не обязательно
+                const msg = L.popup()
+                    .setLatLng([20, 0])
+                    .setContent("⚠️ Русский тайловый сервер временно не отвечает. Используется стандартная карта OSM.")
+                    .openOn(map);
+                setTimeout(() => map.closePopup(msg), 4000);
+            }
         });
 
         // Кластеризация маркеров
@@ -306,42 +223,34 @@
             maxClusterRadius: 55,
             iconCreateFunction: function(cluster) {
                 const count = cluster.getChildCount();
-                let bgColor = '#ff5e3a';
-                if (count > 25) bgColor = '#c73c1a';
-                else if (count > 10) bgColor = '#ff7e4a';
+                let bg = '#ff5e3a';
+                if (count > 25) bg = '#c73c1a';
+                else if (count > 10) bg = '#ff7e4a';
                 return L.divIcon({
-                    html: `<div style="background:${bgColor}; width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:white; font-weight:bold; border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.4);">${count}</div>`,
+                    html: `<div style="background:${bg}; width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:white; font-weight:bold; border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.4);">${count}</div>`,
                     iconSize: L.point(40, 40)
                 });
             }
         });
 
-        // Добавляем маркеры
         testSites.forEach(site => {
-            const marker = L.marker([site.lat, site.lng], { title: site.name })
-                .bindPopup(getPopupContent(site), { maxWidth: 300 });
+            const marker = L.marker([site.lat, site.lng], { title: site.name }).bindPopup(getPopupContent(site), { maxWidth: 300 });
             markersCluster.addLayer(marker);
         });
         map.addLayer(markersCluster);
 
-        // Слой с полигонами
         const polygonGroup = L.layerGroup();
         polygonsData.forEach(poly => {
-            const polygon = L.polygon(poly.coords, {
-                color: poly.color,
-                weight: poly.weight,
-                opacity: poly.opacity,
-                fillOpacity: poly.fillOpacity,
-                smoothFactor: 1.2
-            }).bindTooltip(poly.name, { sticky: true, direction: 'top' });
+            const polygon = L.polygon(poly.coords, { color: poly.color, weight: poly.weight, opacity: poly.opacity, fillOpacity: poly.fillOpacity, smoothFactor: 1.2 })
+                .bindTooltip(poly.name, { sticky: true, direction: 'top' });
             polygon.addTo(polygonGroup);
         });
         polygonGroup.addTo(map);
 
-        // --- Управление слоями (русские названия) ---
+        // Управление слоями (пользователь может сам переключиться на русский или стандартный)
         const baseMaps = {
-            "Русская карта (OSM Russia)": russianTileLayer,
-            "Стандартная OSM (англ.)": defaultOsm
+            "Русская карта (OSM Russia)": russianLayer,
+            "Стандартная OSM": fallbackLayer
         };
         const overlayMaps = {
             "⚛️ Места ядерных испытаний": markersCluster,
@@ -349,17 +258,17 @@
         };
         L.control.layers(baseMaps, overlayMaps, { collapsed: false, position: 'topright' }).addTo(map);
 
-        // --- Счётчик объектов ---
+        // Счётчик объектов
         document.getElementById('siteCountDisplay').innerHTML = `📍 ${testSites.length} объектов | ${polygonsData.length} полигонов`;
 
-        // --- Расчёт общей области для кнопки сброса ---
+        // Общие границы для кнопки сброса
         const boundsGroup = L.featureGroup();
         testSites.forEach(s => boundsGroup.addLayer(L.marker([s.lat, s.lng])));
         polygonsData.forEach(p => boundsGroup.addLayer(L.polygon(p.coords)));
         const globalBounds = boundsGroup.getBounds();
         if (globalBounds.isValid()) map.fitBounds(globalBounds.pad(0.15));
 
-        // --- Кнопка сброса вида (на русском) ---
+        // Кнопка сброса вида
         const resetControl = L.Control.extend({
             options: { position: 'bottomcenter' },
             onAdd: function() {
@@ -379,12 +288,7 @@
             }
         });
         map.addControl(resetControl);
-
-        // Масштабная линейка
         L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
-
-        // Небольшое приветствие в консоль
-        console.log("Карта загружена — все географические названия отображаются на русском языке (тайлы OpenStreetMap Russia).");
     </script>
 </body>
 </html>
