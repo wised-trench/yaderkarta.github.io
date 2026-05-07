@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Ядерные полигоны и места ядерных испытаний</title>
+    <title>Ядерные полигоны мира + Чернобыль и подвиг Легасова</title>
     
     <!-- Leaflet + кластеризация -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -18,7 +18,6 @@
         body { font-family: 'Inter', sans-serif; background: #1a2a32; height: 100vh; overflow: hidden; }
         #map { height: 100vh; width: 100%; z-index: 1; }
         
-        /* Общие стили панелей */
         .info-panel {
             position: absolute;
             bottom: 20px;
@@ -61,7 +60,9 @@
             transition: all 0.2s ease;
         }
         .legend span { display: inline-block; width: 12px; height: 12px; background: #ff4d4d; border-radius: 50%; margin-right: 6px; }
+        .legend .green-marker { background: #44aa44; }
         .legend .poly-badge { background: none; border: 2px solid #ffaa44; width: 12px; height: 12px; border-radius: 2px; background: rgba(255,170,68,0.2); display: inline-block; margin-right: 6px; }
+        .legend .green-poly-badge { border-color: #44aa44; background: rgba(68,170,68,0.2); }
         
         .footer-attribution {
             position: absolute;
@@ -81,7 +82,6 @@
             transition: all 0.2s ease;
         }
         
-        /* Стили попапа (уже адаптивные) */
         .detailed-popup {
             min-width: 260px;
             max-width: 360px;
@@ -112,81 +112,63 @@
         .detailed-popup .desc { font-size: 0.78rem; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 8px; color: #2c2c2c; }
         .detailed-popup .coords { font-size: 0.65rem; color: #777; text-align: right; margin-top: 6px; }
         
-        /* ========== АДАПТАЦИЯ ДЛЯ ТЕЛЕФОНОВ ========== */
         @media (max-width: 768px) {
-            .info-panel {
-                bottom: 12px;
-                left: 12px;
-                padding: 6px 12px;
-                gap: 8px;
-                border-radius: 16px;
-            }
+            .info-panel { bottom: 12px; left: 12px; padding: 6px 12px; gap: 8px; border-radius: 16px; }
             .title h1 { font-size: 0.9rem; }
-            .title p { font-size: 0.6rem; display: none; } /* скрываем вторую строку на телефонах */
-            .stats { font-size: 0.65rem; padding: 2px 8px; white-space: nowrap; }
-            
-            .legend {
-                bottom: 12px;
-                right: 12px;
-                padding: 6px 12px;
-                font-size: 0.6rem;
-                border-left-width: 3px;
-            }
+            .title p { font-size: 0.6rem; display: none; }
+            .stats { font-size: 0.65rem; padding: 2px 8px; }
+            .legend { bottom: 12px; right: 12px; padding: 6px 12px; font-size: 0.6rem; border-left-width: 3px; }
             .legend span, .legend .poly-badge { width: 10px; height: 10px; margin-right: 4px; }
-            
-            .footer-attribution {
-                bottom: 4px;
-                font-size: 0.55rem;
-                padding: 2px 8px;
-                white-space: nowrap;
-            }
-            
-            /* Кнопка сброса вида (добавится через JS, стилизуем отдельно) */
-            .leaflet-control-custom {
-                padding: 4px 10px !important;
-                font-size: 11px !important;
-                margin-bottom: 12px !important;
-            }
-            
-            /* Попап — чуть шире и удобнее для тапа */
-            .detailed-popup {
-                min-width: 240px;
-                max-width: 280px;
-            }
+            .footer-attribution { bottom: 4px; font-size: 0.55rem; padding: 2px 8px; }
+            .leaflet-control-custom { padding: 4px 10px !important; font-size: 11px !important; margin-bottom: 12px !important; }
+            .detailed-popup { min-width: 240px; max-width: 280px; }
             .detailed-popup h3 { font-size: 0.9rem; }
             .detailed-popup .country { font-size: 0.75rem; }
             .detailed-popup .facts { padding: 6px 8px; font-size: 0.7rem; }
             .detailed-popup .desc { font-size: 0.72rem; }
         }
-        
-        /* Очень маленькие экраны (iPhone SE и подобные) */
         @media (max-width: 480px) {
             .info-panel { padding: 4px 8px; gap: 6px; }
             .title h1 { font-size: 0.8rem; }
             .stats { font-size: 0.6rem; padding: 2px 6px; }
             .legend { padding: 4px 8px; font-size: 0.55rem; }
-            .legend div { margin-bottom: 2px; }
         }
     </style>
 </head>
 <body>
     <div class="info-panel">
-        <div class="title"><h1>☢️ Ядерные полигоны мира</h1><p>Подробная история испытаний</p></div>
+        <div class="title"><h1>☢️ Ядерные полигоны + Чернобыль</h1><p>История испытаний и подвиг Легасова</p></div>
         <div class="stats" id="siteCountDisplay">📍 Загрузка...</div>
     </div>
     <div class="legend">
-        <div>🔴 <span></span> Места испытаний</div>
+        <div>🔴 <span></span> Ядерные полигоны</div>
+        <div>🟢 <span class="green-marker"></span> Чернобыльская АЭС</div>
         <div>🟡 <span class="poly-badge"></span> Границы полигонов</div>
+        <div>🟢 <span class="green-poly-badge"></span> Зона отчуждения ЧАЭС</div>
         <div>📖 Развёрнутые описания</div>
     </div>
     <div class="footer-attribution">
-        🗺️ OSM Russia (русские названия)
+        🗺️ OSM Russia (русские названия) | Чернобыль – 1986 | Подвиг В.А. Легасова
     </div>
     <div id="map"></div>
 
     <script>
         // --------------------------------------------------------------
-        // БАЗА ДАННЫХ С ПОДРОБНЫМИ ОПИСАНИЯМИ (24 объекта)
+        // ЧЕРНОБЫЛЬ С ПОДВИГОМ ЛЕГАСОВА
+        // --------------------------------------------------------------
+        const chornobyl = {
+            name: "Чернобыльская АЭС (авария 1986)",
+            country: "Украина (бывший СССР)",
+            lat: 51.389,
+            lng: 30.099,
+            years: "1986",
+            tests: 1,
+            type: "Авария на реакторе",
+            fullDesc: "26 апреля 1986 года произошёл взрыв 4-го энергоблока. Выброс радиоактивных веществ в 400 раз превысил бомбу в Хиросиме. Зона отчуждения радиусом 30 км. Погибло 31 человек в первые месяцы, тысячи ликвидаторов и местных жителей получили большие дозы облучения. Героический подвиг академика Валерия Легасова: он руководил работами по ликвидации, настоял на строительстве саркофага (объект «Укрытие») и ввёл систему дозиметрического контроля. В 1987 году, выступая на Венецианской конференции, Легасов раскрыл подлинные масштабы аварии и причины (ошибки конструкции РБМК и персонала). Не выдержав травли, 27 апреля 1988 года покончил с собой, оставив предсмертную записку: «Аз воздам». Его имя навсегда вписано в историю ядерной безопасности. До сих пор действует саркофаг «Укрытие» и новый конфайнмент (2019)."
+        };
+        
+        // --------------------------------------------------------------
+        // БАЗА ДАННЫХ ПОЛИГОНОВ
         // --------------------------------------------------------------
         const testSites = [
             { name: "Полигон Тринити", country: "США", lat: 33.678, lng: -106.475, years: "1945", tests: 1, type: "Атмосферный", fullDesc: "16 июля 1945 года в 5:29 утра. Мощность ~20 килотонн. Испытание «Тринити» — первый в истории ядерный взрыв. Создал кратер глубиной 1,5 м и превратил песок в зелёное стекло (тринитит). Результат Манхэттенского проекта." },
@@ -218,17 +200,16 @@
             { name: "Остров Молден", country: "Кирибати", lat: 4.020, lng: -154.930, years: "1957–1958", tests: 3, type: "Атмосферные", fullDesc: "Серия британских термоядерных взрывов, предшествующих более мощным на острове Рождества. Сильное загрязнение." }
         ];
         
-        const allSites = [...testSites, ...extraSites];
+        const allSites = [chornobyl, ...testSites, ...extraSites];
         
-        // Функция попапа
         function getPopupContent(site) {
             return `
                 <div class="detailed-popup">
-                    <h3>☢️ ${site.name}</h3>
+                    <h3>${site.name.includes("Чернобыль") ? "⚠️" : "☢️"} ${site.name}</h3>
                     <div class="country">🌍 ${site.country}</div>
                     <div class="facts">
                         <p><strong>📅 Период:</strong> ${site.years || "неизвестно"}</p>
-                        <p><strong>💥 Испытаний:</strong> ${site.tests ? site.tests + " взрывов" : "данных нет"}</p>
+                        <p><strong>${site.name.includes("Чернобыль") ? "💥 Последствия:" : "💥 Испытаний:"}</strong> ${site.tests ? site.tests + (site.name.includes("Чернобыль") ? " (катастрофа)" : " взрывов") : "данных нет"}</p>
                         <p><strong>⚡ Тип:</strong> ${site.type || "разные"}</p>
                     </div>
                     <div class="desc">${site.fullDesc}</div>
@@ -237,13 +218,16 @@
             `;
         }
         
-        // Границы полигонов
+        // --------------------------------------------------------------
+        // ГРАНИЦЫ ПОЛИГОНОВ + ЗОНА ОТЧУЖДЕНИЯ
+        // --------------------------------------------------------------
         const polygonsData = [
             { name: "Невадский полигон", color: "#ffaa44", weight: 2, opacity: 0.8, fillOpacity: 0.18, coords: [[37.35, -116.68], [37.42, -116.25], [37.40, -115.95], [37.20, -115.88], [37.00, -115.92], [36.90, -116.10], [36.92, -116.40], [37.05, -116.62], [37.20, -116.75], [37.35, -116.68]] },
             { name: "Семипалатинский полигон", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[49.55, 77.95], [49.80, 78.30], [50.05, 78.65], [50.25, 79.00], [50.20, 79.28], [49.92, 79.35], [49.65, 79.20], [49.45, 78.75], [49.42, 78.35], [49.55, 77.95]] },
             { name: "Новая Земля", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[72.85, 53.20], [73.15, 55.25], [73.40, 57.80], [73.15, 59.30], [72.70, 59.50], [72.10, 58.20], [71.95, 55.50], [72.30, 53.00], [72.85, 53.20]] },
             { name: "Лобнор", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[40.85, 88.05], [41.15, 88.40], [41.60, 88.80], [41.85, 89.25], [41.30, 89.70], [40.65, 89.30], [40.35, 88.75], [40.55, 88.15], [40.85, 88.05]] },
-            { name: "Муруроа и Фангатауфа", color: "#ffaa44", weight: 2, opacity: 0.6, fillOpacity: 0.1, coords: [[-21.50, -139.20], [-21.30, -138.70], [-21.70, -138.30], [-22.20, -138.25], [-22.50, -138.70], [-22.30, -139.20], [-21.90, -139.40], [-21.50, -139.20]] }
+            { name: "Муруроа и Фангатауфа", color: "#ffaa44", weight: 2, opacity: 0.6, fillOpacity: 0.1, coords: [[-21.50, -139.20], [-21.30, -138.70], [-21.70, -138.30], [-22.20, -138.25], [-22.50, -138.70], [-22.30, -139.20], [-21.90, -139.40], [-21.50, -139.20]] },
+            { name: "Зона отчуждения Чернобыльской АЭС", color: "#44aa44", weight: 3, opacity: 0.9, fillOpacity: 0.25, coords: [[51.5, 29.8], [51.5, 30.4], [51.2, 30.5], [51.1, 30.2], [51.1, 29.7], [51.3, 29.6], [51.5, 29.8]] }
         ];
         
         // --------------------------------------------------------------
@@ -267,7 +251,6 @@
             }
         });
         
-        // Кластеризация
         const markersCluster = L.markerClusterGroup({
             spiderfyOnMaxZoom: true,
             maxClusterRadius: 55,
@@ -284,36 +267,48 @@
         });
         
         allSites.forEach(site => {
-            const marker = L.marker([site.lat, site.lng], { title: site.name })
-                .bindPopup(getPopupContent(site), { maxWidth: 370, minWidth: 260 });
+            let marker;
+            if (site.name.includes("Чернобыль")) {
+                const greenIcon = L.divIcon({
+                    html: '<div style="background:#44aa44; width:28px; height:28px; border-radius:50%; border:2px solid white; box-shadow:0 0 8px #88ff88;"></div>',
+                    iconSize: [28, 28],
+                    className: 'green-marker-icon'
+                });
+                marker = L.marker([site.lat, site.lng], { icon: greenIcon, title: site.name });
+            } else {
+                marker = L.marker([site.lat, site.lng], { title: site.name });
+            }
+            marker.bindPopup(getPopupContent(site), { maxWidth: 370, minWidth: 260 });
             markersCluster.addLayer(marker);
         });
         map.addLayer(markersCluster);
         
         const polygonGroup = L.layerGroup();
         polygonsData.forEach(poly => {
-            const polygon = L.polygon(poly.coords, { color: poly.color, weight: poly.weight, opacity: poly.opacity, fillOpacity: poly.fillOpacity })
-                .bindTooltip(poly.name, { sticky: true });
+            const polygon = L.polygon(poly.coords, { 
+                color: poly.color, 
+                weight: poly.weight, 
+                opacity: poly.opacity, 
+                fillOpacity: poly.fillOpacity
+            }).bindTooltip(poly.name, { sticky: true });
             polygon.addTo(polygonGroup);
         });
         polygonGroup.addTo(map);
         
         L.control.layers(
             { "Русская карта": russianLayer, "Стандартная OSM": fallbackLayer },
-            { "⚛️ Места испытаний": markersCluster, "📐 Границы полигонов": polygonGroup },
+            { "⚛️ Ядерные объекты": markersCluster, "📐 Границы полигонов": polygonGroup },
             { collapsed: false, position: 'topright' }
         ).addTo(map);
         
-        document.getElementById('siteCountDisplay').innerHTML = `📍 ${allSites.length} объектов | ${polygonsData.length} полигонов`;
+        document.getElementById('siteCountDisplay').innerHTML = `📍 ${allSites.length} объектов | ${polygonsData.length} территорий (включая зону ЧАЭС)`;
         
-        // Общие границы для кнопки сброса
         const boundsGroup = L.featureGroup();
         allSites.forEach(s => boundsGroup.addLayer(L.marker([s.lat, s.lng])));
         polygonsData.forEach(p => boundsGroup.addLayer(L.polygon(p.coords)));
         const globalBounds = boundsGroup.getBounds();
         map.fitBounds(globalBounds.pad(0.15));
         
-        // Кнопка сброса вида (с адаптивным классом)
         const resetControl = L.Control.extend({
             options: { position: 'bottomcenter' },
             onAdd: () => {
