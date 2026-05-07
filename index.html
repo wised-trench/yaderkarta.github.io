@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Ядерные полигоны мира + Чернобыль и подвиг Легасова</title>
+    <title>Карта ядерных полигонов и мест ядерных испытаний + Чернобыль | Подвиг Легасова</title>
     
     <!-- Leaflet + кластеризация -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -18,6 +18,7 @@
         body { font-family: 'Inter', sans-serif; background: #1a2a32; height: 100vh; overflow: hidden; }
         #map { height: 100vh; width: 100%; z-index: 1; }
         
+        /* Общие стили панелей */
         .info-panel {
             position: absolute;
             bottom: 20px;
@@ -37,15 +38,17 @@
             border: 1px solid rgba(255,255,255,0.2);
             font-size: 0.85rem;
             transition: all 0.2s ease;
+            max-width: calc(100% - 40px);
         }
         .title h1 { font-size: 1.2rem; font-weight: 600; }
         .title p { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; }
         .stats { background: rgba(0,0,0,0.5); padding: 4px 12px; border-radius: 40px; font-size: 0.8rem; font-weight: 500; white-space: nowrap; }
         
+        /* Легенда теперь слева, над панелью или рядом */
         .legend {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
+            bottom: 88px;  /* чтобы не перекрывать панель */
+            left: 20px;
             z-index: 1000;
             background: rgba(0,0,0,0.7);
             backdrop-filter: blur(8px);
@@ -58,6 +61,7 @@
             pointer-events: none;
             font-family: monospace;
             transition: all 0.2s ease;
+            max-width: calc(100% - 40px);
         }
         .legend span { display: inline-block; width: 12px; height: 12px; background: #ff4d4d; border-radius: 50%; margin-right: 6px; }
         .legend .green-marker { background: #44aa44; }
@@ -108,30 +112,67 @@
             margin: 8px 0;
             font-size: 0.75rem;
         }
-        .detailed-popup .facts p { margin: 4px 0; display: flex; gap: 8px; align-items: baseline; }
+        .detailed-popup .facts p { margin: 4px 0; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
         .detailed-popup .desc { font-size: 0.78rem; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 8px; color: #2c2c2c; }
         .detailed-popup .coords { font-size: 0.65rem; color: #777; text-align: right; margin-top: 6px; }
         
+        /* ========== АДАПТАЦИЯ ДЛЯ ТЕЛЕФОНОВ ========== */
         @media (max-width: 768px) {
-            .info-panel { bottom: 12px; left: 12px; padding: 6px 12px; gap: 8px; border-radius: 16px; }
+            .info-panel {
+                bottom: 12px;
+                left: 12px;
+                padding: 6px 12px;
+                gap: 8px;
+                border-radius: 16px;
+                max-width: calc(100% - 24px);
+            }
             .title h1 { font-size: 0.9rem; }
-            .title p { font-size: 0.6rem; display: none; }
+            .title p { display: none; } /* скрываем вторую строку */
             .stats { font-size: 0.65rem; padding: 2px 8px; }
-            .legend { bottom: 12px; right: 12px; padding: 6px 12px; font-size: 0.6rem; border-left-width: 3px; }
+            
+            .legend {
+                bottom: auto;
+                top: 12px;
+                left: 12px;
+                right: auto;
+                padding: 6px 10px;
+                font-size: 0.6rem;
+                border-left-width: 3px;
+                max-width: calc(100% - 24px);
+                background: rgba(0,0,0,0.8);
+            }
             .legend span, .legend .poly-badge { width: 10px; height: 10px; margin-right: 4px; }
-            .footer-attribution { bottom: 4px; font-size: 0.55rem; padding: 2px 8px; }
-            .leaflet-control-custom { padding: 4px 10px !important; font-size: 11px !important; margin-bottom: 12px !important; }
-            .detailed-popup { min-width: 240px; max-width: 280px; }
+            .legend div { white-space: nowrap; }
+            
+            .footer-attribution {
+                bottom: 4px;
+                font-size: 0.55rem;
+                padding: 2px 8px;
+                white-space: nowrap;
+            }
+            
+            .leaflet-control-custom {
+                padding: 4px 10px !important;
+                font-size: 11px !important;
+                margin-bottom: 12px !important;
+            }
+            
+            .detailed-popup {
+                min-width: 220px;
+                max-width: 260px;
+            }
             .detailed-popup h3 { font-size: 0.9rem; }
             .detailed-popup .country { font-size: 0.75rem; }
             .detailed-popup .facts { padding: 6px 8px; font-size: 0.7rem; }
             .detailed-popup .desc { font-size: 0.72rem; }
         }
+        
         @media (max-width: 480px) {
             .info-panel { padding: 4px 8px; gap: 6px; }
             .title h1 { font-size: 0.8rem; }
             .stats { font-size: 0.6rem; padding: 2px 6px; }
-            .legend { padding: 4px 8px; font-size: 0.55rem; }
+            .legend { padding: 4px 8px; font-size: 0.55rem; top: 8px; left: 8px; }
+            .legend div { white-space: normal; }
         }
     </style>
 </head>
@@ -145,10 +186,9 @@
         <div>🟢 <span class="green-marker"></span> Чернобыльская АЭС</div>
         <div>🟡 <span class="poly-badge"></span> Границы полигонов</div>
         <div>🟢 <span class="green-poly-badge"></span> Зона отчуждения ЧАЭС</div>
-        <div>📖 Развёрнутые описания</div>
     </div>
     <div class="footer-attribution">
-        🗺️ OSM Russia (русские названия) | Чернобыль – 1986 | Подвиг В.А. Легасова
+        🗺️ OSM Russia | Чернобыль 1986 | В.А. Легасов
     </div>
     <div id="map"></div>
 
@@ -218,9 +258,7 @@
             `;
         }
         
-        // --------------------------------------------------------------
         // ГРАНИЦЫ ПОЛИГОНОВ + ЗОНА ОТЧУЖДЕНИЯ
-        // --------------------------------------------------------------
         const polygonsData = [
             { name: "Невадский полигон", color: "#ffaa44", weight: 2, opacity: 0.8, fillOpacity: 0.18, coords: [[37.35, -116.68], [37.42, -116.25], [37.40, -115.95], [37.20, -115.88], [37.00, -115.92], [36.90, -116.10], [36.92, -116.40], [37.05, -116.62], [37.20, -116.75], [37.35, -116.68]] },
             { name: "Семипалатинский полигон", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[49.55, 77.95], [49.80, 78.30], [50.05, 78.65], [50.25, 79.00], [50.20, 79.28], [49.92, 79.35], [49.65, 79.20], [49.45, 78.75], [49.42, 78.35], [49.55, 77.95]] },
@@ -285,12 +323,8 @@
         
         const polygonGroup = L.layerGroup();
         polygonsData.forEach(poly => {
-            const polygon = L.polygon(poly.coords, { 
-                color: poly.color, 
-                weight: poly.weight, 
-                opacity: poly.opacity, 
-                fillOpacity: poly.fillOpacity
-            }).bindTooltip(poly.name, { sticky: true });
+            const polygon = L.polygon(poly.coords, { color: poly.color, weight: poly.weight, opacity: poly.opacity, fillOpacity: poly.fillOpacity })
+                .bindTooltip(poly.name, { sticky: true });
             polygon.addTo(polygonGroup);
         });
         polygonGroup.addTo(map);
@@ -301,7 +335,7 @@
             { collapsed: false, position: 'topright' }
         ).addTo(map);
         
-        document.getElementById('siteCountDisplay').innerHTML = `📍 ${allSites.length} объектов | ${polygonsData.length} территорий (включая зону ЧАЭС)`;
+        document.getElementById('siteCountDisplay').innerHTML = `📍 ${allSites.length} объектов | ${polygonsData.length} территорий`;
         
         const boundsGroup = L.featureGroup();
         allSites.forEach(s => boundsGroup.addLayer(L.marker([s.lat, s.lng])));
