@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Ядерные полигоны и места ядерных испытаний</title>
+    <title>Ядерные полигоны мира – подробная историческая карта</title>
     
     <!-- Leaflet + кластеризация -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -75,119 +75,378 @@
             white-space: nowrap;
             pointer-events: auto;
         }
-        .ymaps-like-popup { min-width: 280px; max-width: 340px; font-family: 'Inter', sans-serif; }
-        .popup-header { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; }
-        .popup-photo { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); background: #e9e9e9; }
-        .popup-title { flex: 1; }
-        .popup-title h3 { margin: 0 0 4px 0; font-size: 1rem; font-weight: 700; color: #d43f1f; }
-        .popup-country { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #2c3e4e; background: #f0f0f0; padding: 4px 10px; border-radius: 20px; width: fit-content; }
-        .flag-icon-sm { width: 22px; height: 15px; border-radius: 3px; }
-        .popup-details { background: #f9f9f9; padding: 10px; border-radius: 14px; margin: 10px 0; font-size: 0.8rem; }
-        .popup-details p { margin: 4px 0; display: flex; align-items: baseline; gap: 6px; }
-        .popup-desc { font-size: 0.75rem; line-height: 1.4; color: #333; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 8px; }
-        .popup-coords { font-size: 0.65rem; color: #777; text-align: right; margin-top: 6px; }
-        @media (max-width: 500px) { .popup-photo { width: 60px; height: 60px; } .ymaps-like-popup { min-width: 240px; } }
+        .detailed-popup {
+            min-width: 280px;
+            max-width: 360px;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.45;
+        }
+        .detailed-popup h3 {
+            margin: 0 0 6px 0;
+            color: #d43f1f;
+            border-left: 4px solid #ff6600;
+            padding-left: 10px;
+            font-size: 1rem;
+        }
+        .detailed-popup .country {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: #2c5a7a;
+        }
+        .detailed-popup .facts {
+            background: #f5f5f0;
+            padding: 8px 10px;
+            border-radius: 12px;
+            margin: 8px 0;
+            font-size: 0.75rem;
+        }
+        .detailed-popup .facts p {
+            margin: 4px 0;
+            display: flex;
+            gap: 8px;
+            align-items: baseline;
+        }
+        .detailed-popup .desc {
+            font-size: 0.78rem;
+            margin-top: 8px;
+            border-top: 1px solid #ddd;
+            padding-top: 8px;
+            color: #2c2c2c;
+        }
+        .detailed-popup .coords {
+            font-size: 0.65rem;
+            color: #777;
+            text-align: right;
+            margin-top: 6px;
+        }
+        @media (max-width: 500px) {
+            .detailed-popup { min-width: 250px; }
+        }
     </style>
 </head>
 <body>
     <div class="info-panel">
-        <div class="title"><h1>☢️ Ядерные полигоны мира</h1><p>Исторические места с фото и фактами</p></div>
+        <div class="title"><h1>☢️ Ядерные полигоны мира</h1><p>Подробная история испытаний</p></div>
         <div class="stats" id="siteCountDisplay">📍 Загрузка...</div>
     </div>
     <div class="legend">
         <div>🔴 <span></span> Места испытаний (кластеры)</div>
         <div>🟡 <span class="poly-badge"></span> Границы полигонов</div>
-        <div>📸 Фото через Weserv CDN + надёжная заглушка</div>
+        <div>📖 Развёрнутые описания</div>
     </div>
     <div class="footer-attribution">
-        🗺️ OSM Russia (русские названия) | Изображения: Weserv + Wikimedia Commons
+        🗺️ OSM Russia (русские названия) | Исторические данные: открытые архивы
     </div>
     <div id="map"></div>
 
     <script>
         // --------------------------------------------------------------
-        // 100% НАДЁЖНЫЙ ПРОКСИ (Weserv)
+        // БАЗА ДАННЫХ С ПОДРОБНЫМИ ОПИСАНИЯМИ
         // --------------------------------------------------------------
-        const proxy = (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=160&h=160&fit=cover`;
-        
-        // Base64-заглушка (радиационный знак) – отображается всегда, если фото не загрузилось
-        const FALLBACK_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23ffcc00'/%3E%3Cpath fill='black' d='M50 15 L62 55 L38 55 Z'/%3E%3Ccircle cx='50' cy='70' r='8' fill='black'/%3E%3C/svg%3E";
-        
-        // Данные о полигонах (все изображения проксируются через Weserv)
         const testSites = [
-            { name: "Полигон Тринити", country: "США", lat: 33.678, lng: -106.475, years: "1945", tests: 1, type: "Атмосферный", desc: "Первое в истории ядерное испытание «Тринити» 16 июля 1945 года. Мощность ~20 килотонн.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/8/8b/Trinity_test_1945.gif") },
-            { name: "Невадский полигон", country: "США", lat: 37.114, lng: -116.048, years: "1951–1992", tests: 928, type: "Атмосферные, подземные", desc: "Крупнейший полигон США. Более 900 взрывов.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Nevada_Test_Site_crater.jpg/320px-Nevada_Test_Site_crater.jpg") },
-            { name: "Атолл Бикини", country: "США", lat: 11.600, lng: 165.400, years: "1946–1958", tests: 23, type: "Атмосферные, подводные", desc: "Испытание Castle Bravo (1954) — 15 мегатонн.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/9/9e/Castle_Bravo_blast.jpg") },
-            { name: "Атолл Эниветок", country: "США", lat: 11.500, lng: 162.200, years: "1948–1958", tests: 43, type: "Атмосферные", desc: "Испытание «Майк» — первая термоядерная бомба (10,4 Мт).", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/e/e7/Ivy_Mike_blast.jpg") },
-            { name: "Атолл Джонстон", country: "США", lat: 16.730, lng: -169.520, years: "1958–1962", tests: 12, type: "Высотные", desc: "Испытания на большой высоте, проект «Fishbowl».", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/4/4f/Starfish_Primary_cloud.jpg") },
-            { name: "Остров Рождества", country: "Кирибати", lat: 1.870, lng: -157.400, years: "1957–1962", tests: 33, type: "Атмосферные", desc: "Британские и американские термоядерные серии.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Kiritimati_Island_IKONOS.jpg/320px-Kiritimati_Island_IKONOS.jpg") },
-            { name: "Семипалатинский полигон", country: "Казахстан", lat: 49.950, lng: 78.970, years: "1949–1989", tests: 456, type: "Атмосферные, подземные", desc: "Первый советский взрыв РДС-1 (29 августа 1949).", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/1/1f/RDS-1_blast.jpg") },
-            { name: "Новая Земля", country: "Россия", lat: 73.400, lng: 54.850, years: "1955–1990", tests: 224, type: "Атмосферные, подземные", desc: "«Царь-бомба» (1961) — 58 мегатонн.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/5/5f/Tsar_bomba_blast.jpg") },
-            { name: "Лобнор", country: "Китай", lat: 41.530, lng: 88.700, years: "1964–1996", tests: 45, type: "Атмосферные, подземные", desc: "Первый китайский ядерный взрыв «596» (1964).", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/596_china_nuclear_test_0001.jpg/320px-596_china_nuclear_test_0001.jpg") },
-            { name: "Муруроа", country: "Франция", lat: -21.850, lng: -138.920, years: "1966–1996", tests: 181, type: "Атмосферные, подземные", desc: "Основной полигон Франции в Тихом океане.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/8/8b/Mururoa_atoll_ISS.jpg") },
-            { name: "Покхаран", country: "Индия", lat: 27.090, lng: 71.750, years: "1974, 1998", tests: 6, type: "Подземные", desc: "Операции «Улыбающийся Будда» и «Шакти».", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/7/7a/Pokharan_crater.jpg") },
-            { name: "Пунгери (КНДР)", country: "КНДР", lat: 41.280, lng: 129.070, years: "2006–2017", tests: 6, type: "Подземные", desc: "Шесть подземных взрывов, последний в 2017 году.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/9/92/Punggye-ri_nuclear_test_site_2017.jpg") }
+            {
+                name: "Полигон Тринити",
+                country: "США",
+                lat: 33.678,
+                lng: -106.475,
+                years: "1945",
+                tests: 1,
+                type: "Атмосферный",
+                shortDesc: "Первое в истории ядерное испытание.",
+                fullDesc: "16 июля 1945 года в 5:29 утра. Мощность ~20 килотонн. Испытание代号 «Тринити» (Троица). Взрыв создал кратер глубиной 1,5 метра и превратил песок в зелёное стекло (тринитит). Результат Манхэттенского проекта."
+            },
+            {
+                name: "Невадский полигон",
+                country: "США",
+                lat: 37.114,
+                lng: -116.048,
+                years: "1951–1992",
+                tests: 928,
+                type: "Атмосферные, подземные",
+                shortDesc: "Крупнейший полигон США.",
+                fullDesc: "Здесь произошло более 900 взрывов. Самый мощный атмосферный — «Hood» (74 кт, 1957). После 1963 года только подземные. В 1970 взрыв «Baneberry» вызвал выброс радиации на поверхность. Сейчас используется для тренировок спасателей."
+            },
+            {
+                name: "Атолл Бикини",
+                country: "США",
+                lat: 11.600,
+                lng: 165.400,
+                years: "1946–1958",
+                tests: 23,
+                type: "Атмосферные, подводные",
+                shortDesc: "Castle Bravo — самый мощный взрыв США.",
+                fullDesc: "1 марта 1954 года взрыв Castle Bravo (15 Мт) — в 1000 раз мощнее Хиросимы. Из-за просчёта мощности радиоактивные осадки поразили японскую рыболовную шхуну «Счастливый дракон». Атолл до сих пор непригоден для жизни. В 2010 году включён в список Всемирного наследия ЮНЕСКО."
+            },
+            {
+                name: "Атолл Эниветок",
+                country: "США",
+                lat: 11.500,
+                lng: 162.200,
+                years: "1948–1958",
+                tests: 43,
+                type: "Атмосферные",
+                shortDesc: "Первая термоядерная бомба «Майк».",
+                fullDesc: "1 ноября 1952 года взрыв «Майк» мощностью 10,4 Мт полностью испарил остров Элугелаб. Это была первая в мире водородная бомба (использовала жидкий дейтерий). В 1956 году — взрыв «Redwing» мощностью 5 Мт."
+            },
+            {
+                name: "Атолл Джонстон",
+                country: "США",
+                lat: 16.730,
+                lng: -169.520,
+                years: "1958–1962",
+                tests: 12,
+                type: "Высотные",
+                shortDesc: "Испытания на большой высоте.",
+                fullDesc: "9 июля 1962 года взрыв «Starfish Prime» на высоте 400 км мощностью 1,4 Мт. Электромагнитный импульс вывел из строя уличное освещение на Гавайях (около 1400 км). Радиационные пояса Земли были усилены на несколько лет."
+            },
+            {
+                name: "Остров Рождества (Киритимати)",
+                country: "Кирибати",
+                lat: 1.870,
+                lng: -157.400,
+                years: "1957–1962",
+                tests: 33,
+                type: "Атмосферные",
+                shortDesc: "Британские и американские термоядерные серии.",
+                fullDesc: "В 1957 году Британия взорвала «Грэппл X» (1,8 Мт) — первую термоядерную бомбу, пригодную для сброса с самолёта. В 1962 году США провели серию «Доминик» (24 взрыва). Атолл сильно загрязнён плутонием."
+            },
+            {
+                name: "Семипалатинский полигон",
+                country: "Казахстан",
+                lat: 49.950,
+                lng: 78.970,
+                years: "1949–1989",
+                tests: 456,
+                type: "Атмосферные, подземные",
+                shortDesc: "Первый советский ядерный взрыв.",
+                fullDesc: "29 августа 1949 года РДС-1 (22 кт). Всего 456 взрывов, в том числе 116 атмосферных. От радиоактивных последствий пострадало около 1,5 млн человек. Жители близлежащих сёл не были эвакуированы. Полигон закрыт в 1989 году под давлением антиядерного движения «Невада-Семипалатинск»."
+            },
+            {
+                name: "Новая Земля",
+                country: "Россия",
+                lat: 73.400,
+                lng: 54.850,
+                years: "1955–1990",
+                tests: 224,
+                type: "Атмосферные, подземные",
+                shortDesc: "«Царь-бомба» — самый мощный взрыв в истории.",
+                fullDesc: "30 октября 1961 года взрыв АН602 (58 Мт) — в 10 раз мощнее всех боеприпасов Второй мировой. Ударная волна обогнула Землю трижды, сейсмическая волна зафиксирована по всему миру. Полигон расположен в вечной мерзлоте, до 1963 года проводились атмосферные взрывы."
+            },
+            {
+                name: "Лобнор",
+                country: "Китай",
+                lat: 41.530,
+                lng: 88.700,
+                years: "1964–1996",
+                tests: 45,
+                type: "Атмосферные, подземные",
+                shortDesc: "Первый китайский ядерный взрыв.",
+                fullDesc: "16 октября 1964 года взрыв «596» (22 кт). Китай стал пятой ядерной державой. В 1967 году первая водородная бомба (3,3 Мт). В 1996 году Китай подписал ДВЗЯИ. Полигон сильно пострадал от эрозии и ветрового переноса плутония."
+            },
+            {
+                name: "Муруроа",
+                country: "Франция",
+                lat: -21.850,
+                lng: -138.920,
+                years: "1966–1996",
+                tests: 181,
+                type: "Атмосферные, подземные",
+                shortDesc: "Главный полигон Франции в Тихом океане.",
+                fullDesc: "Первый взрыв 2 июля 1966 года. Всего 181 испытание, включая 41 атмосферное. В 1974 году переход на подземные. Последствия — рак у местного населения (полинезийцы). В 1996 году Франция прекратила испытания. Сейчас атолл является охраняемой зоной."
+            },
+            {
+                name: "Покхаран",
+                country: "Индия",
+                lat: 27.090,
+                lng: 71.750,
+                years: "1974, 1998",
+                tests: 6,
+                type: "Подземные",
+                shortDesc: "«Улыбающийся Будда» и «Шакти».",
+                fullDesc: "18 мая 1974 года первое индийское испытание (12 кт). Кодовое имя «Улыбающийся Будда». В 1998 году серия из пяти взрывов (до 45 кт). Индия объявила себя ядерной державой, что вызвало санкции."
+            },
+            {
+                name: "Пунгери (КНДР)",
+                country: "КНДР",
+                lat: 41.280,
+                lng: 129.070,
+                years: "2006–2017",
+                tests: 6,
+                type: "Подземные",
+                shortDesc: "Шесть подземных взрывов.",
+                fullDesc: "Первое испытание 9 октября 2006 года (менее 1 кт). Самое мощное — 3 сентября 2017 года (от 120 до 250 кт). Вызвало искусственное землетрясение магнитудой 6,3. Полигон частично обрушился. В 2018 году объявлено о его закрытии."
+            }
         ];
         
-        // Дополнительные точки с заглушкой
+        // Дополнительные объекты (подробные описания)
         const extraSites = [
-            { name: "Атолл Фангатауфа", country: "Франция", lat: -22.270, lng: -138.760, years: "1966–1996", tests: 13, type: "Подземные", desc: "Соседний атолл для мощных подземных взрывов.", imageUrl: FALLBACK_IMG },
-            { name: "Регган (Алжир)", country: "Франция", lat: 26.730, lng: 0.150, years: "1960–1966", tests: 4, type: "Атмосферные", desc: "Первые французские испытания в Сахаре.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/e/e3/Gerboise_Bleue_1960.jpg") },
-            { name: "Маралинга", country: "Австралия", lat: -30.170, lng: 131.620, years: "1956–1963", tests: 7, type: "Атмосферные", desc: "Британские испытания, загрязнение плутонием.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Maralinga_plume.jpg/320px-Maralinga_plume.jpg") },
-            { name: "Чаги-Хиллз", country: "Пакистан", lat: 28.780, lng: 64.960, years: "1998", tests: 2, type: "Подземные", desc: "Первые пакистанские ядерные испытания.", imageUrl: FALLBACK_IMG },
-            { name: "Тоцкий полигон", country: "Россия", lat: 52.810, lng: 52.700, years: "1954", tests: 1, type: "Войсковые учения", desc: "Единственные войсковые учения с реальным взрывом в СССР.", imageUrl: FALLBACK_IMG },
-            { name: "Острова Монтебелло", country: "Австралия", lat: -20.400, lng: 115.550, years: "1952–1956", tests: 3, type: "Атмосферные", desc: "Первые британские испытания.", imageUrl: FALLBACK_IMG },
-            { name: "Поле Эму", country: "Австралия", lat: -28.700, lng: 132.370, years: "1953", tests: 2, type: "Атмосферные", desc: "Операция «Тотем».", imageUrl: FALLBACK_IMG },
-            { name: "Тонопа", country: "США", lat: 37.200, lng: -116.700, years: "1957–1992", tests: 102, type: "Подземные", desc: "Часть Невадского полигона.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Nevada_Test_Site_crater.jpg/320px-Nevada_Test_Site_crater.jpg") },
-            { name: "Западный участок Лобнора", country: "Китай", lat: 41.750, lng: 88.200, years: "1967–1996", tests: 22, type: "Подземные", desc: "Дополнительная зона полигона Лобнор.", imageUrl: FALLBACK_IMG },
-            { name: "Дегелен", country: "Казахстан", lat: 49.800, lng: 78.100, years: "1961–1989", tests: 215, type: "Подземные", desc: "Участок Семипалатинского полигона в горах.", imageUrl: FALLBACK_IMG },
-            { name: "Ин-Экер", country: "Франция", lat: 24.060, lng: 5.070, years: "1961–1966", tests: 13, type: "Подземные", desc: "Подземные испытания Франции в Алжире.", imageUrl: FALLBACK_IMG },
-            { name: "Остров Молден", country: "Кирибати", lat: 4.020, lng: -154.930, years: "1957–1958", tests: 3, type: "Атмосферные", desc: "Британские испытания «Грэппл».", imageUrl: FALLBACK_IMG }
+            {
+                name: "Атолл Фангатауфа",
+                country: "Франция",
+                lat: -22.270,
+                lng: -138.760,
+                years: "1966–1996",
+                tests: 13,
+                type: "Подземные",
+                shortDesc: "Второй атолл Франции.",
+                fullDesc: "Использовался для особо мощных подземных взрывов, в том числе для проверки боеголовок для подводных лодок. Самый сильный взрыв — 1971 год (1,2 Мт)."
+            },
+            {
+                name: "Регган (Алжир)",
+                country: "Франция",
+                lat: 26.730,
+                lng: 0.150,
+                years: "1960–1966",
+                tests: 4,
+                type: "Атмосферные",
+                shortDesc: "Первые французские испытания в Сахаре.",
+                fullDesc: "13 февраля 1960 года — первый французский взрыв «Голубая пустыня» (70 кт). Всего 4 атмосферных взрыва, загрязнивших пустыню плутонием. Местное население не предупреждали."
+            },
+            {
+                name: "Маралинга",
+                country: "Австралия",
+                lat: -30.170,
+                lng: 131.620,
+                years: "1956–1963",
+                tests: 7,
+                type: "Атмосферные",
+                shortDesc: "Британские испытания с загрязнением.",
+                fullDesc: "Британские взрывы (до 27 кт). В 1960-х проведены «грязные» эксперименты по рассеиванию плутония без взрыва. Район до сих пор содержит остаточную радиацию. В 1990-х проведена частичная реабилитация."
+            },
+            {
+                name: "Чаги-Хиллз (Рас-Кох)",
+                country: "Пакистан",
+                lat: 28.780,
+                lng: 64.960,
+                years: "1998",
+                tests: 2,
+                type: "Подземные",
+                shortDesc: "Первые пакистанские испытания.",
+                fullDesc: "28 мая 1998 года пять взрывов (9–40 кт) в ответ на индийские. Пакистан стал ядерной державой. Испытания проводились в туннелях под горой."
+            },
+            {
+                name: "Тоцкий полигон",
+                country: "Россия",
+                lat: 52.810,
+                lng: 52.700,
+                years: "1954",
+                tests: 1,
+                type: "Войсковые учения",
+                shortDesc: "Единственные войсковые учения с реальным взрывом в СССР.",
+                fullDesc: "14 сентября 1954 года взрыв 40-кт бомбы. В учениях участвовало 45 000 солдат, многие оказались в зоне радиации. Медицинские последствия скрывались десятилетиями."
+            },
+            {
+                name: "Острова Монтебелло",
+                country: "Австралия",
+                lat: -20.400,
+                lng: 115.550,
+                years: "1952–1956",
+                tests: 3,
+                type: "Атмосферные",
+                shortDesc: "Первые британские испытания.",
+                fullDesc: "3 октября 1952 года первое британское ядерное испытание (25 кт). В 1956 году ещё два взрыва. Сильное загрязнение акватории."
+            },
+            {
+                name: "Поле Эму",
+                country: "Австралия",
+                lat: -28.700,
+                lng: 132.370,
+                years: "1953",
+                tests: 2,
+                type: "Атмосферные",
+                shortDesc: "Операция «Тотем».",
+                fullDesc: "Два взрыва (9 и 8 кт) в 1953 году. Неудачная дислокация привела к облучению аборигенов, не эвакуированных вовремя."
+            },
+            {
+                name: "Тонопа (Тонопа-Тест-Рейндж)",
+                country: "США",
+                lat: 37.200,
+                lng: -116.700,
+                years: "1957–1992",
+                tests: 102,
+                type: "Подземные",
+                shortDesc: "Часть Невадского полигона.",
+                fullDesc: "Специализировалась на подземных взрывах малой и средней мощности, в том числе в рамках программы мирных ядерных взрывов (газ, каналы)."
+            },
+            {
+                name: "Западный участок Лобнора",
+                country: "Китай",
+                lat: 41.750,
+                lng: 88.200,
+                years: "1967–1996",
+                tests: 22,
+                type: "Подземные",
+                shortDesc: "Дополнительная зона полигона Лобнор.",
+                fullDesc: "Подземные испытания для совершенствования термоядерных зарядов. Большинство данных засекречены."
+            },
+            {
+                name: "Дегелен (горный массив)",
+                country: "Казахстан",
+                lat: 49.800,
+                lng: 78.100,
+                years: "1961–1989",
+                tests: 215,
+                type: "Подземные",
+                shortDesc: "Участок Семипалатинского полигона в горах.",
+                fullDesc: "Большинство подземных взрывов СССР на Семипалатинском полигоне проводилось именно здесь, в штольнях. До 1989 года."
+            },
+            {
+                name: "Ин-Экер (Танезруфт)",
+                country: "Франция",
+                lat: 24.060,
+                lng: 5.070,
+                years: "1961–1966",
+                tests: 13,
+                type: "Подземные",
+                shortDesc: "Подземные испытания Франции в Алжире.",
+                fullDesc: "После запрета атмосферных испытаний Франция провела 13 подземных взрывов в алжирской Сахаре. Мощность до 30 кт."
+            },
+            {
+                name: "Остров Молден",
+                country: "Кирибати",
+                lat: 4.020,
+                lng: -154.930,
+                years: "1957–1958",
+                tests: 3,
+                type: "Атмосферные",
+                shortDesc: "Британские испытания «Грэппл».",
+                fullDesc: "Серия британских термоядерных взрывов, предшествующих более мощным на острове Рождества. Сильное загрязнение."
+            }
         ];
         
         const allSites = [...testSites, ...extraSites];
         
-        // Флаги стран
-        function getFlagUrl(country) {
-            const map = { "США": "us", "Казахстан": "kz", "Россия": "ru", "Китай": "cn", "Франция": "fr", "Австралия": "au", "Индия": "in", "Пакистан": "pk", "КНДР": "kp", "Кирибати": "ki" };
-            let code = map[country] || "un";
-            return `https://flagcdn.com/w40/${code}.png`;
-        }
-        
-        // Всплывающее окно с фотографией (и надёжным fallback)
+        // Функция всплывающего окна с подробным описанием
         function getPopupContent(site) {
-            const flagUrl = getFlagUrl(site.country);
-            const imgUrl = site.imageUrl || FALLBACK_IMG;
+            // Используем fullDesc, если есть, иначе shortDesc + расширяем
+            const description = site.fullDesc || (site.shortDesc + " " + (site.desc || ""));
             return `
-                <div class="ymaps-like-popup">
-                    <div class="popup-header">
-                        <img class="popup-photo" src="${imgUrl}" alt="${site.name}" 
-                             onerror="this.onerror=null; this.src='${FALLBACK_IMG}';">
-                        <div class="popup-title">
-                            <h3>☢️ ${site.name}</h3>
-                            <div class="popup-country">
-                                <img class="flag-icon-sm" src="${flagUrl}" alt="${site.country}"> ${site.country}
-                            </div>
-                        </div>
+                <div class="detailed-popup">
+                    <h3>☢️ ${site.name}</h3>
+                    <div class="country">🌍 ${site.country}</div>
+                    <div class="facts">
+                        <p><strong>📅 Период:</strong> ${site.years || "неизвестно"}</p>
+                        <p><strong>💥 Испытаний:</strong> ${site.tests ? site.tests + " взрывов" : "данных нет"}</p>
+                        <p><strong>⚡ Тип:</strong> ${site.type || "разные"}</p>
                     </div>
-                    <div class="popup-details">
-                        <p><span>📅</span> <strong>Период:</strong> ${site.years || "неизвестно"}</p>
-                        <p><span>💥</span> <strong>Испытаний:</strong> ${site.tests ? site.tests + " взрывов" : "данных нет"}</p>
-                        <p><span>⚡</span> <strong>Тип:</strong> ${site.type || "разные"}</p>
+                    <div class="desc">
+                        ${description}
                     </div>
-                    <div class="popup-desc">${site.desc}</div>
-                    <div class="popup-coords">📍 ${site.lat.toFixed(2)}°, ${site.lng.toFixed(2)}°</div>
+                    <div class="coords">📍 ${site.lat.toFixed(2)}°, ${site.lng.toFixed(2)}°</div>
                 </div>
             `;
         }
         
-        // Границы полигонов
+        // --------------------------------------------------------------
+        // ГРАНИЦЫ ПОЛИГОНОВ (приблизительные, для визуализации)
+        // --------------------------------------------------------------
         const polygonsData = [
-            { name: "Невадский полигон", color: "#ffaa44", weight: 2, opacity: 0.8, fillOpacity: 0.18, coords: [[37.35, -116.68], [37.42, -116.25], [37.40, -115.95], [37.20, -115.88], [37.00, -115.92], [36.90, -116.10], [36.92, -116.40], [37.05, -116.62], [37.20, -116.75], [37.35, -116.68]] },
-            { name: "Семипалатинский полигон", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[49.55, 77.95], [49.80, 78.30], [50.05, 78.65], [50.25, 79.00], [50.20, 79.28], [49.92, 79.35], [49.65, 79.20], [49.45, 78.75], [49.42, 78.35], [49.55, 77.95]] },
-            { name: "Новая Земля", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[72.85, 53.20], [73.15, 55.25], [73.40, 57.80], [73.15, 59.30], [72.70, 59.50], [72.10, 58.20], [71.95, 55.50], [72.30, 53.00], [72.85, 53.20]] },
-            { name: "Лобнор", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[40.85, 88.05], [41.15, 88.40], [41.60, 88.80], [41.85, 89.25], [41.30, 89.70], [40.65, 89.30], [40.35, 88.75], [40.55, 88.15], [40.85, 88.05]] },
-            { name: "Муруроа и Фангатауфа", color: "#ffaa44", weight: 2, opacity: 0.6, fillOpacity: 0.1, coords: [[-21.50, -139.20], [-21.30, -138.70], [-21.70, -138.30], [-22.20, -138.25], [-22.50, -138.70], [-22.30, -139.20], [-21.90, -139.40], [-21.50, -139.20]] }
+            { name: "Невадский полигон (граница)", color: "#ffaa44", weight: 2, opacity: 0.8, fillOpacity: 0.18, coords: [[37.35, -116.68], [37.42, -116.25], [37.40, -115.95], [37.20, -115.88], [37.00, -115.92], [36.90, -116.10], [36.92, -116.40], [37.05, -116.62], [37.20, -116.75], [37.35, -116.68]] },
+            { name: "Семипалатинский полигон (контур)", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[49.55, 77.95], [49.80, 78.30], [50.05, 78.65], [50.25, 79.00], [50.20, 79.28], [49.92, 79.35], [49.65, 79.20], [49.45, 78.75], [49.42, 78.35], [49.55, 77.95]] },
+            { name: "Новая Земля (зона)", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[72.85, 53.20], [73.15, 55.25], [73.40, 57.80], [73.15, 59.30], [72.70, 59.50], [72.10, 58.20], [71.95, 55.50], [72.30, 53.00], [72.85, 53.20]] },
+            { name: "Лобнор (полигон)", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[40.85, 88.05], [41.15, 88.40], [41.60, 88.80], [41.85, 89.25], [41.30, 89.70], [40.65, 89.30], [40.35, 88.75], [40.55, 88.15], [40.85, 88.05]] },
+            { name: "Муруроа и Фангатауфа (акватория)", color: "#ffaa44", weight: 2, opacity: 0.6, fillOpacity: 0.1, coords: [[-21.50, -139.20], [-21.30, -138.70], [-21.70, -138.30], [-22.20, -138.25], [-22.50, -138.70], [-22.30, -139.20], [-21.90, -139.40], [-21.50, -139.20]] }
         ];
         
         // --------------------------------------------------------------
@@ -195,6 +454,7 @@
         // --------------------------------------------------------------
         const map = L.map('map').setView([35, 20], 2.2);
         
+        // Русскоязычный слой (OpenStreetMap Russia)
         const russianLayer = L.tileLayer('https://{s}.tile.openstreetmap.ru/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors, Russia',
             subdomains: 'abc',
@@ -204,6 +464,7 @@
         const fallbackLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap'
         });
+        
         russianLayer.on('tileerror', () => {
             if (!map.hasLayer(fallbackLayer)) {
                 map.removeLayer(russianLayer);
@@ -229,11 +490,12 @@
         
         allSites.forEach(site => {
             const marker = L.marker([site.lat, site.lng], { title: site.name })
-                .bindPopup(getPopupContent(site), { maxWidth: 360, minWidth: 260 });
+                .bindPopup(getPopupContent(site), { maxWidth: 370, minWidth: 280 });
             markersCluster.addLayer(marker);
         });
         map.addLayer(markersCluster);
         
+        // Полигоны
         const polygonGroup = L.layerGroup();
         polygonsData.forEach(poly => {
             const polygon = L.polygon(poly.coords, { color: poly.color, weight: poly.weight, opacity: poly.opacity, fillOpacity: poly.fillOpacity })
@@ -242,6 +504,7 @@
         });
         polygonGroup.addTo(map);
         
+        // Управление слоями
         L.control.layers(
             { "Русская карта": russianLayer, "Стандартная OSM": fallbackLayer },
             { "⚛️ Места испытаний": markersCluster, "📐 Границы полигонов": polygonGroup },
