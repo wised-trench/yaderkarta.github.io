@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Ядерные полигоны и места проведения ядерных испытаний</title>
+    <title>Ядерные полигоны и места ядерных испытаний</title>
     
-    <!-- Leaflet + MarkerCluster -->
+    <!-- Leaflet + кластеризация -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -37,7 +37,7 @@
             border: 1px solid rgba(255,255,255,0.2);
             font-size: 0.85rem;
         }
-        .title h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.3px; }
+        .title h1 { font-size: 1.2rem; font-weight: 600; }
         .title p { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; }
         .stats { background: rgba(0,0,0,0.5); padding: 4px 12px; border-radius: 40px; font-size: 0.8rem; font-weight: 500; white-space: nowrap; }
         
@@ -56,10 +56,8 @@
             border-left: 4px solid #ff5e00;
             pointer-events: none;
             font-family: monospace;
-            line-height: 1.4;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
-        .legend span { display: inline-block; width: 12px; height: 12px; background: #ff4d4d; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 4px rgba(255,80,80,0.8); }
+        .legend span { display: inline-block; width: 12px; height: 12px; background: #ff4d4d; border-radius: 50%; margin-right: 6px; }
         .legend .poly-badge { background: none; border: 2px solid #ffaa44; width: 12px; height: 12px; border-radius: 2px; background: rgba(255,170,68,0.2); }
         .footer-attribution {
             position: absolute;
@@ -77,81 +75,18 @@
             white-space: nowrap;
             pointer-events: auto;
         }
-        .ymaps-like-popup {
-            min-width: 280px;
-            max-width: 340px;
-            font-family: 'Inter', sans-serif;
-        }
-        .popup-header {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 12px;
-            align-items: center;
-        }
-        .popup-photo {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            background: #e9e9e9;
-        }
-        .popup-title {
-            flex: 1;
-        }
-        .popup-title h3 {
-            margin: 0 0 4px 0;
-            font-size: 1rem;
-            font-weight: 700;
-            color: #d43f1f;
-        }
-        .popup-country {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.75rem;
-            color: #2c3e4e;
-            background: #f0f0f0;
-            padding: 4px 10px;
-            border-radius: 20px;
-            width: fit-content;
-        }
-        .flag-icon-sm {
-            width: 22px;
-            height: 15px;
-            border-radius: 3px;
-        }
-        .popup-details {
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 14px;
-            margin: 10px 0;
-            font-size: 0.8rem;
-        }
-        .popup-details p {
-            margin: 4px 0;
-            display: flex;
-            align-items: baseline;
-            gap: 6px;
-        }
-        .popup-desc {
-            font-size: 0.75rem;
-            line-height: 1.4;
-            color: #333;
-            margin-top: 8px;
-            border-top: 1px solid #ddd;
-            padding-top: 8px;
-        }
-        .popup-coords {
-            font-size: 0.65rem;
-            color: #777;
-            text-align: right;
-            margin-top: 6px;
-        }
-        @media (max-width: 500px) {
-            .popup-photo { width: 60px; height: 60px; }
-            .ymaps-like-popup { min-width: 240px; }
-        }
+        .ymaps-like-popup { min-width: 280px; max-width: 340px; font-family: 'Inter', sans-serif; }
+        .popup-header { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; }
+        .popup-photo { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); background: #e9e9e9; }
+        .popup-title { flex: 1; }
+        .popup-title h3 { margin: 0 0 4px 0; font-size: 1rem; font-weight: 700; color: #d43f1f; }
+        .popup-country { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #2c3e4e; background: #f0f0f0; padding: 4px 10px; border-radius: 20px; width: fit-content; }
+        .flag-icon-sm { width: 22px; height: 15px; border-radius: 3px; }
+        .popup-details { background: #f9f9f9; padding: 10px; border-radius: 14px; margin: 10px 0; font-size: 0.8rem; }
+        .popup-details p { margin: 4px 0; display: flex; align-items: baseline; gap: 6px; }
+        .popup-desc { font-size: 0.75rem; line-height: 1.4; color: #333; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 8px; }
+        .popup-coords { font-size: 0.65rem; color: #777; text-align: right; margin-top: 6px; }
+        @media (max-width: 500px) { .popup-photo { width: 60px; height: 60px; } .ymaps-like-popup { min-width: 240px; } }
     </style>
 </head>
 <body>
@@ -162,24 +97,27 @@
     <div class="legend">
         <div>🔴 <span></span> Места испытаний (кластеры)</div>
         <div>🟡 <span class="poly-badge"></span> Границы полигонов</div>
-        <div>📸 Реальные фото из архивов</div>
+        <div>📸 Фото через Weserv CDN + надёжная заглушка</div>
     </div>
     <div class="footer-attribution">
-        🗺️ OSM Russia (русские названия) | Изображения через Staticaly CDN
+        🗺️ OSM Russia (русские названия) | Изображения: Weserv + Wikimedia Commons
     </div>
     <div id="map"></div>
 
     <script>
         // --------------------------------------------------------------
-        // БАЗА ДАННЫХ С ПРОКСИРОВАННЫМИ ИЗОБРАЖЕНИЯМИ (гарантия загрузки)
+        // 100% НАДЁЖНЫЙ ПРОКСИ (Weserv)
         // --------------------------------------------------------------
-        // Вспомогательная функция: проксирование URL Wikimedia через Staticaly
-        const proxy = (url) => `https://cdn.statically.io/img/${url.replace('https://', '')}`;
+        const proxy = (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=160&h=160&fit=cover`;
         
+        // Base64-заглушка (радиационный знак) – отображается всегда, если фото не загрузилось
+        const FALLBACK_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23ffcc00'/%3E%3Cpath fill='black' d='M50 15 L62 55 L38 55 Z'/%3E%3Ccircle cx='50' cy='70' r='8' fill='black'/%3E%3C/svg%3E";
+        
+        // Данные о полигонах (все изображения проксируются через Weserv)
         const testSites = [
             { name: "Полигон Тринити", country: "США", lat: 33.678, lng: -106.475, years: "1945", tests: 1, type: "Атмосферный", desc: "Первое в истории ядерное испытание «Тринити» 16 июля 1945 года. Мощность ~20 килотонн.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/8/8b/Trinity_test_1945.gif") },
             { name: "Невадский полигон", country: "США", lat: 37.114, lng: -116.048, years: "1951–1992", tests: 928, type: "Атмосферные, подземные", desc: "Крупнейший полигон США. Более 900 взрывов.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Nevada_Test_Site_crater.jpg/320px-Nevada_Test_Site_crater.jpg") },
-            { name: "Атолл Бикини", country: "США", lat: 11.600, lng: 165.400, years: "1946–1958", tests: 23, type: "Атмосферные, подводные", desc: "Castle Bravo (1954) — 15 мегатонн.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/9/9e/Castle_Bravo_blast.jpg") },
+            { name: "Атолл Бикини", country: "США", lat: 11.600, lng: 165.400, years: "1946–1958", tests: 23, type: "Атмосферные, подводные", desc: "Испытание Castle Bravo (1954) — 15 мегатонн.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/9/9e/Castle_Bravo_blast.jpg") },
             { name: "Атолл Эниветок", country: "США", lat: 11.500, lng: 162.200, years: "1948–1958", tests: 43, type: "Атмосферные", desc: "Испытание «Майк» — первая термоядерная бомба (10,4 Мт).", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/e/e7/Ivy_Mike_blast.jpg") },
             { name: "Атолл Джонстон", country: "США", lat: 16.730, lng: -169.520, years: "1958–1962", tests: 12, type: "Высотные", desc: "Испытания на большой высоте, проект «Fishbowl».", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/4/4f/Starfish_Primary_cloud.jpg") },
             { name: "Остров Рождества", country: "Кирибати", lat: 1.870, lng: -157.400, years: "1957–1962", tests: 33, type: "Атмосферные", desc: "Британские и американские термоядерные серии.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Kiritimati_Island_IKONOS.jpg/320px-Kiritimati_Island_IKONOS.jpg") },
@@ -190,38 +128,41 @@
             { name: "Покхаран", country: "Индия", lat: 27.090, lng: 71.750, years: "1974, 1998", tests: 6, type: "Подземные", desc: "Операции «Улыбающийся Будда» и «Шакти».", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/7/7a/Pokharan_crater.jpg") },
             { name: "Пунгери (КНДР)", country: "КНДР", lat: 41.280, lng: 129.070, years: "2006–2017", tests: 6, type: "Подземные", desc: "Шесть подземных взрывов, последний в 2017 году.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/9/92/Punggye-ri_nuclear_test_site_2017.jpg") }
         ];
-
-        const defaultImage = proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Nuclear_fireball.jpg/320px-Nuclear_fireball.jpg");
+        
+        // Дополнительные точки с заглушкой
         const extraSites = [
-            { name: "Атолл Фангатауфа", country: "Франция", lat: -22.270, lng: -138.760, years: "1966–1996", tests: 13, type: "Подземные", desc: "Соседний атолл для мощных подземных взрывов.", imageUrl: defaultImage },
-            { name: "Регган (Алжир)", country: "Франция", lat: 26.730, lng: 0.150, years: "1960–1966", tests: 4, type: "Атмосферные", desc: "Первые французские испытания в Сахаре.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Gerboise_Bleue_1960.jpg/320px-Gerboise_Bleue_1960.jpg") },
+            { name: "Атолл Фангатауфа", country: "Франция", lat: -22.270, lng: -138.760, years: "1966–1996", tests: 13, type: "Подземные", desc: "Соседний атолл для мощных подземных взрывов.", imageUrl: FALLBACK_IMG },
+            { name: "Регган (Алжир)", country: "Франция", lat: 26.730, lng: 0.150, years: "1960–1966", tests: 4, type: "Атмосферные", desc: "Первые французские испытания в Сахаре.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/e/e3/Gerboise_Bleue_1960.jpg") },
             { name: "Маралинга", country: "Австралия", lat: -30.170, lng: 131.620, years: "1956–1963", tests: 7, type: "Атмосферные", desc: "Британские испытания, загрязнение плутонием.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Maralinga_plume.jpg/320px-Maralinga_plume.jpg") },
-            { name: "Чаги-Хиллз", country: "Пакистан", lat: 28.780, lng: 64.960, years: "1998", tests: 2, type: "Подземные", desc: "Первые пакистанские ядерные испытания.", imageUrl: defaultImage },
-            { name: "Тоцкий полигон", country: "Россия", lat: 52.810, lng: 52.700, years: "1954", tests: 1, type: "Войсковые учения", desc: "Единственные войсковые учения с реальным взрывом в СССР.", imageUrl: defaultImage },
-            { name: "Острова Монтебелло", country: "Австралия", lat: -20.400, lng: 115.550, years: "1952–1956", tests: 3, type: "Атмосферные", desc: "Первые британские испытания.", imageUrl: defaultImage },
-            { name: "Поле Эму", country: "Австралия", lat: -28.700, lng: 132.370, years: "1953", tests: 2, type: "Атмосферные", desc: "Операция «Тотем».", imageUrl: defaultImage },
+            { name: "Чаги-Хиллз", country: "Пакистан", lat: 28.780, lng: 64.960, years: "1998", tests: 2, type: "Подземные", desc: "Первые пакистанские ядерные испытания.", imageUrl: FALLBACK_IMG },
+            { name: "Тоцкий полигон", country: "Россия", lat: 52.810, lng: 52.700, years: "1954", tests: 1, type: "Войсковые учения", desc: "Единственные войсковые учения с реальным взрывом в СССР.", imageUrl: FALLBACK_IMG },
+            { name: "Острова Монтебелло", country: "Австралия", lat: -20.400, lng: 115.550, years: "1952–1956", tests: 3, type: "Атмосферные", desc: "Первые британские испытания.", imageUrl: FALLBACK_IMG },
+            { name: "Поле Эму", country: "Австралия", lat: -28.700, lng: 132.370, years: "1953", tests: 2, type: "Атмосферные", desc: "Операция «Тотем».", imageUrl: FALLBACK_IMG },
             { name: "Тонопа", country: "США", lat: 37.200, lng: -116.700, years: "1957–1992", tests: 102, type: "Подземные", desc: "Часть Невадского полигона.", imageUrl: proxy("https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Nevada_Test_Site_crater.jpg/320px-Nevada_Test_Site_crater.jpg") },
-            { name: "Западный участок Лобнора", country: "Китай", lat: 41.750, lng: 88.200, years: "1967–1996", tests: 22, type: "Подземные", desc: "Дополнительная зона полигона Лобнор.", imageUrl: defaultImage },
-            { name: "Дегелен", country: "Казахстан", lat: 49.800, lng: 78.100, years: "1961–1989", tests: 215, type: "Подземные", desc: "Участок Семипалатинского полигона в горах.", imageUrl: defaultImage },
-            { name: "Ин-Экер", country: "Франция", lat: 24.060, lng: 5.070, years: "1961–1966", tests: 13, type: "Подземные", desc: "Подземные испытания Франции в Алжире.", imageUrl: defaultImage },
-            { name: "Остров Молден", country: "Кирибати", lat: 4.020, lng: -154.930, years: "1957–1958", tests: 3, type: "Атмосферные", desc: "Британские испытания «Грэппл».", imageUrl: defaultImage }
+            { name: "Западный участок Лобнора", country: "Китай", lat: 41.750, lng: 88.200, years: "1967–1996", tests: 22, type: "Подземные", desc: "Дополнительная зона полигона Лобнор.", imageUrl: FALLBACK_IMG },
+            { name: "Дегелен", country: "Казахстан", lat: 49.800, lng: 78.100, years: "1961–1989", tests: 215, type: "Подземные", desc: "Участок Семипалатинского полигона в горах.", imageUrl: FALLBACK_IMG },
+            { name: "Ин-Экер", country: "Франция", lat: 24.060, lng: 5.070, years: "1961–1966", tests: 13, type: "Подземные", desc: "Подземные испытания Франции в Алжире.", imageUrl: FALLBACK_IMG },
+            { name: "Остров Молден", country: "Кирибати", lat: 4.020, lng: -154.930, years: "1957–1958", tests: 3, type: "Атмосферные", desc: "Британские испытания «Грэппл».", imageUrl: FALLBACK_IMG }
         ];
         
         const allSites = [...testSites, ...extraSites];
         
-        function getFlagUrl(countryName) {
+        // Флаги стран
+        function getFlagUrl(country) {
             const map = { "США": "us", "Казахстан": "kz", "Россия": "ru", "Китай": "cn", "Франция": "fr", "Австралия": "au", "Индия": "in", "Пакистан": "pk", "КНДР": "kp", "Кирибати": "ki" };
-            let code = map[countryName] || (countryName.includes("США") ? "us" : (countryName.includes("Россия") ? "ru" : "un"));
+            let code = map[country] || "un";
             return `https://flagcdn.com/w40/${code}.png`;
         }
         
-        function getYandexPopupContent(site) {
+        // Всплывающее окно с фотографией (и надёжным fallback)
+        function getPopupContent(site) {
             const flagUrl = getFlagUrl(site.country);
-            const imageUrl = site.imageUrl || defaultImage;
+            const imgUrl = site.imageUrl || FALLBACK_IMG;
             return `
                 <div class="ymaps-like-popup">
                     <div class="popup-header">
-                        <img class="popup-photo" src="${imageUrl}" alt="${site.name}" onerror="this.onerror=null; this.src='${defaultImage}';">
+                        <img class="popup-photo" src="${imgUrl}" alt="${site.name}" 
+                             onerror="this.onerror=null; this.src='${FALLBACK_IMG}';">
                         <div class="popup-title">
                             <h3>☢️ ${site.name}</h3>
                             <div class="popup-country">
@@ -234,16 +175,12 @@
                         <p><span>💥</span> <strong>Испытаний:</strong> ${site.tests ? site.tests + " взрывов" : "данных нет"}</p>
                         <p><span>⚡</span> <strong>Тип:</strong> ${site.type || "разные"}</p>
                     </div>
-                    <div class="popup-desc">
-                        ${site.desc}
-                    </div>
-                    <div class="popup-coords">
-                        📍 ${site.lat.toFixed(2)}°, ${site.lng.toFixed(2)}°
-                    </div>
+                    <div class="popup-desc">${site.desc}</div>
+                    <div class="popup-coords">📍 ${site.lat.toFixed(2)}°, ${site.lng.toFixed(2)}°</div>
                 </div>
             `;
         }
-
+        
         // Границы полигонов
         const polygonsData = [
             { name: "Невадский полигон", color: "#ffaa44", weight: 2, opacity: 0.8, fillOpacity: 0.18, coords: [[37.35, -116.68], [37.42, -116.25], [37.40, -115.95], [37.20, -115.88], [37.00, -115.92], [36.90, -116.10], [36.92, -116.40], [37.05, -116.62], [37.20, -116.75], [37.35, -116.68]] },
@@ -252,51 +189,51 @@
             { name: "Лобнор", color: "#ffaa44", weight: 2, opacity: 0.7, fillOpacity: 0.15, coords: [[40.85, 88.05], [41.15, 88.40], [41.60, 88.80], [41.85, 89.25], [41.30, 89.70], [40.65, 89.30], [40.35, 88.75], [40.55, 88.15], [40.85, 88.05]] },
             { name: "Муруроа и Фангатауфа", color: "#ffaa44", weight: 2, opacity: 0.6, fillOpacity: 0.1, coords: [[-21.50, -139.20], [-21.30, -138.70], [-21.70, -138.30], [-22.20, -138.25], [-22.50, -138.70], [-22.30, -139.20], [-21.90, -139.40], [-21.50, -139.20]] }
         ];
-
+        
         // --------------------------------------------------------------
         // ИНИЦИАЛИЗАЦИЯ КАРТЫ
         // --------------------------------------------------------------
         const map = L.map('map').setView([35, 20], 2.2);
-
+        
         const russianLayer = L.tileLayer('https://{s}.tile.openstreetmap.ru/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors, Russia',
             subdomains: 'abc',
             maxZoom: 18
         }).addTo(map);
-
+        
         const fallbackLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap'
         });
-
         russianLayer.on('tileerror', () => {
             if (!map.hasLayer(fallbackLayer)) {
                 map.removeLayer(russianLayer);
                 fallbackLayer.addTo(map);
             }
         });
-
+        
+        // Кластеризация маркеров
         const markersCluster = L.markerClusterGroup({
             spiderfyOnMaxZoom: true,
             maxClusterRadius: 55,
             iconCreateFunction: (cluster) => {
-                const count = cluster.getChildCount();
+                const cnt = cluster.getChildCount();
                 let bg = '#ff5e3a';
-                if (count > 25) bg = '#c73c1a';
-                else if (count > 10) bg = '#ff7e4a';
+                if (cnt > 25) bg = '#c73c1a';
+                else if (cnt > 10) bg = '#ff7e4a';
                 return L.divIcon({
-                    html: `<div style="background:${bg}; width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:white; font-weight:bold; border:2px solid white;">${count}</div>`,
+                    html: `<div style="background:${bg}; width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:white; font-weight:bold; border:2px solid white;">${cnt}</div>`,
                     iconSize: L.point(40, 40)
                 });
             }
         });
-
+        
         allSites.forEach(site => {
             const marker = L.marker([site.lat, site.lng], { title: site.name })
-                .bindPopup(getYandexPopupContent(site), { maxWidth: 360, minWidth: 260 });
+                .bindPopup(getPopupContent(site), { maxWidth: 360, minWidth: 260 });
             markersCluster.addLayer(marker);
         });
         map.addLayer(markersCluster);
-
+        
         const polygonGroup = L.layerGroup();
         polygonsData.forEach(poly => {
             const polygon = L.polygon(poly.coords, { color: poly.color, weight: poly.weight, opacity: poly.opacity, fillOpacity: poly.fillOpacity })
@@ -304,21 +241,23 @@
             polygon.addTo(polygonGroup);
         });
         polygonGroup.addTo(map);
-
+        
         L.control.layers(
             { "Русская карта": russianLayer, "Стандартная OSM": fallbackLayer },
             { "⚛️ Места испытаний": markersCluster, "📐 Границы полигонов": polygonGroup },
             { collapsed: false, position: 'topright' }
         ).addTo(map);
-
+        
         document.getElementById('siteCountDisplay').innerHTML = `📍 ${allSites.length} объектов | ${polygonsData.length} полигонов`;
-
+        
+        // Общие границы
         const boundsGroup = L.featureGroup();
         allSites.forEach(s => boundsGroup.addLayer(L.marker([s.lat, s.lng])));
         polygonsData.forEach(p => boundsGroup.addLayer(L.polygon(p.coords)));
         const globalBounds = boundsGroup.getBounds();
         map.fitBounds(globalBounds.pad(0.15));
-
+        
+        // Кнопка сброса вида
         const resetControl = L.Control.extend({
             options: { position: 'bottomcenter' },
             onAdd: () => {
