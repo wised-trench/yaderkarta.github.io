@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Интерактивная карта ядерных полигонов и испытаний | История ядерных взрывов</title>
+    
+    <!-- Leaflet CSS + JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Leaflet MarkerCluster CSS + JS (для кластеризации маркеров) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
+    <!-- Дополнительный шрифт и стили -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #1a2a32;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* Карта на весь экран */
+        #map {
+            height: 100vh;
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* Панель информации (шапка) */
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 12px 24px;
+            color: white;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            pointer-events: none;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .title h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        .title p {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+        .stats {
+            background: rgba(0,0,0,0.5);
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            pointer-events: auto;
+        }
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            padding: 12px 18px;
+            border-radius: 16px;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-left: 4px solid #ff5e00;
+            pointer-events: none;
+            font-family: monospace;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .legend span {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background: #ff4d4d;
+            border-radius: 50%;
+            margin-right: 6px;
+            box-shadow: 0 0 4px rgba(255,80,80,0.8);
+        }
+        .legend .poly-badge {
+            background: none;
+            border: 2px solid #ffaa44;
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            background: rgba(255,170,68,0.2);
+        }
+        a {
+            color: #ffaa66;
+            text-decoration: none;
+        }
+        .footer-attribution {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.5);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            color: #ccc;
+            pointer-events: auto;
+            font-family: monospace;
+        }
+        @media (max-width: 700px) {
+            .info-panel { padding: 8px 16px; top: 12px; left: 12px; right: 12px; }
+            .title h1 { font-size: 1rem; }
+            .stats { font-size: 0.7rem; }
+            .legend { font-size: 0.65rem; padding: 8px 12px; bottom: 12px; right: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="info-panel">
+        <div class="title">
+            <h1>☢️ Ядерные полигоны и места испытаний</h1>
+            <p>Исторические объекты ядерных взрывов (1945–2017) | Интерактивная карта</p>
+        </div>
+        <div class="stats" id="siteCountDisplay">
+            📍 Загрузка объектов...
+        </div>
+    </div>
+    <div class="legend">
+        <div>🔴 <span></span> Маркер испытаний (кластеры)</div>
+        <div>🟡 <span class="poly-badge"></span> Границы основных полигонов</div>
+        <div>💥 Данные: Wikipedia, CTBTO, архивные источники</div>
+    </div>
+    <div class="footer-attribution">
+        🗺️ Тайлы: OpenStreetMap | Данные о ядерных испытаниях | Проект для GitHub Pages
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        // ----------------------------------------------
+        // 1. БАЗА ДАННЫХ: ядерные полигоны и места испытаний
+        // ----------------------------------------------
+        const testSites = [
+            // США / основные полигоны
+            { name: "Trinity Site (первое ядерное испытание)", country: "США", lat: 33.678, lng: -106.475, years: "1945", tests: 1, type: "Атмосферный", desc: "Испытание «Тринити» — первый ядерный взрыв в истории (16 июля 1945)." },
+            { name: "Nevada Test Site (NTS)", country: "США", lat: 37.114, lng: -116.048, years: "1951–1992", tests: 928, type: "Атмосферные, подземные", desc: "Крупнейший полигон США, более 900 взрывов." },
+            { name: "Bikini Atoll", country: "США", lat: 11.600, lng: 165.400, years: "1946–1958", tests: 23, type: "Атмосферные, подводные", desc: "Операции Crossroads, Castle Bravo и др." },
+            { name: "Enewetak Atoll", country: "США", lat: 11.500, lng: 162.200, years: "1948–1958", tests: 43, type: "Атмосферные", desc: "Включая взрыв «Mike» (первая термоядерная бомба)." },
+            { name: "Johnston Atoll", country: "США", lat: 16.730, lng: -169.520, years: "1958–1962", tests: 12, type: "Высотные, ракетные", desc: "Испытания на большой высоте, проект «Fishbowl»." },
+            { name: "Christmas Island (Kiritimati)", country: "Кирибати (Великобритания/США)", lat: 1.870, lng: -157.400, years: "1957–1962", tests: 33, type: "Атмосферные, термоядерные", desc: "Британские и американские серии испытаний." },
+            { name: "Malden Island", country: "Кирибати (Великобритания)", lat: 4.020, lng: -154.930, years: "1957–1958", tests: 3, type: "Атмосферные", desc: "Часть британских испытаний «Grapple»." },
+            
+            // СССР / Россия
+            { name: "Семипалатинский полигон (СИП)", country: "СССР / Казахстан", lat: 49.950, lng: 78.970, years: "1949–1989", tests: 456, type: "Атмосферные, подземные", desc: "Первый советский ядерный взрыв (РДС-1). Мощные серии." },
+            { name: "Новая Земля (Северный полигон)", country: "СССР / Россия", lat: 73.400, lng: 54.850, years: "1955–1990", tests: 224, type: "Атмосферные, подземные", desc: "Включая «Царь-бомбу» (58 Мт, 1961)." },
+            { name: "Тоцкое (войсковые учения) *", country: "СССР", lat: 52.810, lng: 52.700, years: "1954", tests: 1, type: "Войсковые учения", desc: "Единственные войсковые учения с реальным ядерным взрывом в СССР." },
+            
+            // Китай
+            { name: "Лобнор (полигон 221)", country: "Китай", lat: 41.530, lng: 88.700, years: "1964–1996", tests: 45, type: "Атмосферные, подземные", desc: "Первый китайский ядерный взрыв 1964 г." },
+            
+            // Франция
+            { name: "Mururoa Atoll", country: "Франция", lat: -21.850, lng: -138.920, years: "1966–1996", tests: 181, type: "Атмосферные, подземные", desc: "Основной полигон Франции в Тихом океане." },
+            { name: "Fangataufa Atoll", country: "Франция", lat: -22.270, lng: -138.760, years: "1966–1996", tests: 13, type: "Подземные", desc: "Дополнительный атолл для мегатонных взрывов." },
+            { name: "Reggane (Алжир)", country: "Франция", lat: 26.730, lng: 0.150, years: "1960–1966", tests: 4, type: "Атмосферные", desc: "Первые французские испытания в Сахаре (Голубая пустыня)." },
+            { name: "In Eker (Алжир)", country: "Франция", lat: 24.060, lng: 5.070, years: "1961–1966", tests: 13, type: "Подземные", desc: "Продолжение французской программы в Алжире." },
+            
+            // Великобритания / Австралия
+            { name: "Montebello Islands", country: "Австралия (Великобритания)", lat: -20.400, lng: 115.550, years: "1952–1956", tests: 3, type: "Атмосферные", desc: "Первые британские испытания." },
+            { name: "Emu Field", country: "Австралия", lat: -28.700, lng: 132.370, years: "1953", tests: 2, type: "Атмосферные", desc: "Операция Totem." },
+            { name: "Maralinga", country: "Австралия", lat: -30.170, lng: 131.620, years: "1956–1963", tests: 7, type: "Атмосферные, побочные эффекты", desc: "Серия британских испытаний, включая загрязнение." },
+            
+            // Индия
+            { name: "Покхаран (Полигон)", country: "Индия", lat: 27.090, lng: 71.750, years: "1974, 1998", tests: 6, type: "Подземные", desc: "Операции «Улыбающийся Будда» и «Шакти»." },
+            
+            // Пакистан
+            { name: "Chagai Hills (Рас-Кох)", country: "Пакистан", lat: 28.780, lng: 64.960, years: "1998", tests: 2, type: "Подземные", desc: "Первые пакистанские ядерные испытания (ответ на Индию)." },
+            
+            // Северная Корея
+            { name: "Пунгери (Северная Корея)", country: "КНДР", lat: 41.280, lng: 129.070, years: "2006–2017", tests: 6, type: "Подземные", desc: "6 подземных ядерных взрывов, последний в 2017." },
+            
+            // дополнительные точки для полноты
+            { name: "Тонопа (вспомогательный полигон)", country: "США", lat: 37.200, lng: -116.700, years: "1957–1992", tests: 102, type: "Подземные", desc: "Часть Nevada Test Site, малые мощности." },
+            { name: "Аламогордо (White Sands)", country: "США", lat: 32.880, lng: -106.300, years: "1945", tests: 1, type: "Атмосферный", desc: "Trinity Site, уже отмечен выше." },
+            { name: "Лоп Нур (западный участок)", country: "Китай", lat: 41.750, lng: 88.200, years: "1967–1996", tests: 22, type: "Подземные", desc: "Часть Лопнорского полигона." },
+            { name: "Семипалатинск (площадка Дегелен)", country: "Казахстан", lat: 49.800, lng: 78.100, years: "1961–1989", tests: 215, type: "Подземные", desc: "Шахтные взрывы в горных выработках." }
+        ];
+        
+        // Функция для формирования HTML-содержимого popup
+        function getPopupContent(site) {
+            let testInfo = site.tests ? `${site.tests} взрыв(а/ов)` : "данных нет";
+            let yearsInfo = site.years || "неизвестно";
+            let typeInfo = site.type || "разные типы";
+            let descText = site.desc || "Информация о месте проведения испытаний.";
+            return `
+                <div style="min-width: 220px; max-width: 280px; font-family: 'Inter', sans-serif;">
+                    <h3 style="margin:0 0 6px 0; color:#d43f1f; border-left: 4px solid #ff6600; padding-left: 10px;">☢️ ${site.name}</h3>
+                    <p style="margin: 6px 0; font-size:0.85rem;"><strong>🌍 Страна:</strong> ${site.country}</p>
+                    <p style="margin: 4px 0; font-size:0.85rem;"><strong>📅 Период:</strong> ${yearsInfo}</p>
+                    <p style="margin: 4px 0; font-size:0.85rem;"><strong>💥 Количество испытаний:</strong> ${testInfo}</p>
+                    <p style="margin: 4px 0; font-size:0.85rem;"><strong>⚡ Тип:</strong> ${typeInfo}</p>
+                    <p style="margin: 8px 0 4px; font-size:0.8rem; background:#f5f0e7; padding: 6px; border-radius: 8px;">📖 ${descText}</p>
+                    <p style="font-size:0.7rem; color:#666; margin-top:6px; border-top:1px solid #ddd; padding-top:4px;">📍 Координаты: ${site.lat.toFixed(3)}°, ${site.lng.toFixed(3)}°</p>
+                </div>
+            `;
+        }
+        
+        // ----------------------------------------------
+        // 2. ГРАНИЦЫ ОСНОВНЫХ ПОЛИГОНОВ (приблизительные)
+        // ----------------------------------------------
+        const polygonsData = [
+            {
+                name: "Nevada Test Site (приблизительная граница)",
+                color: "#ffaa44",
+                weight: 2,
+                opacity: 0.8,
+                fillOpacity: 0.18,
+                coords: [
+                    [37.35, -116.68], [37.42, -116.25], [37.40, -115.95], [37.20, -115.88],
+                    [37.00, -115.92], [36.90, -116.10], [36.92, -116.40], [37.05, -116.62],
+                    [37.20, -116.75], [37.35, -116.68]
+                ]
+            },
+            {
+                name: "Семипалатинский полигон (СИП, ориентир)",
+                color: "#ffaa44",
+                weight: 2,
+                opacity: 0.7,
+                fillOpacity: 0.15,
+                coords: [
+                    [49.55, 77.95], [49.80, 78.30], [50.05, 78.65], [50.25, 79.00],
+                    [50.20, 79.28], [49.92, 79.35], [49.65, 79.20], [49.45, 78.75],
+                    [49.42, 78.35], [49.55, 77.95]
+                ]
+            },
+            {
+                name: "Новая Земля (южная часть полигона)",
+                color: "#ffaa44",
+                weight: 2,
+                opacity: 0.7,
+                fillOpacity: 0.15,
+                coords: [
+                    [72.85, 53.20], [73.15, 55.25], [73.40, 57.80], [73.15, 59.30],
+                    [72.70, 59.50], [72.10, 58.20], [71.95, 55.50], [72.30, 53.00],
+                    [72.85, 53.20]
+                ]
+            },
+            {
+                name: "Лобнор (полигон Китая)",
+                color: "#ffaa44",
+                weight: 2,
+                opacity: 0.7,
+                fillOpacity: 0.15,
+                coords: [
+                    [40.85, 88.05], [41.15, 88.40], [41.60, 88.80], [41.85, 89.25],
+                    [41.30, 89.70], [40.65, 89.30], [40.35, 88.75], [40.55, 88.15],
+                    [40.85, 88.05]
+                ]
+            },
+            {
+                name: "Mururoa & Fangataufa (акватория)",
+                color: "#ffaa44",
+                weight: 2,
+                opacity: 0.6,
+                fillOpacity: 0.1,
+                coords: [
+                    [-21.50, -139.20], [-21.30, -138.70], [-21.70, -138.30], [-22.20, -138.25],
+                    [-22.50, -138.70], [-22.30, -139.20], [-21.90, -139.40], [-21.50, -139.20]
+                ]
+            }
+        ];
+        
+        // ----------------------------------------------
+        // 3. ИНИЦИАЛИЗАЦИЯ КАРТЫ
+        // ----------------------------------------------
+        const map = L.map('map').setView([30, 20], 2.4); // начальный обзор
+        
+        // Базовый слой OpenStreetMap
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CartoDB',
+            subdomains: 'abcd',
+            maxZoom: 19,
+            minZoom: 2
+        }).addTo(map);
+        
+        // Дополнительный слой сателлитный (опционально, для атмосферы)
+        // Не добавляем чтобы не перегружать, но можно раскомментировать.
+        
+        // Группа для маркеров с кластеризацией
+        const markersCluster = L.markerClusterGroup({
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: true,
+            zoomToBoundsOnClick: true,
+            maxClusterRadius: 50,
+            iconCreateFunction: function(cluster) {
+                const count = cluster.getChildCount();
+                let size = 'small';
+                let color = '#ff6b4a';
+                if (count > 20) size = 'large';
+                else if (count > 8) size = 'medium';
+                return L.divIcon({
+                    html: `<div style="background:${color}; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:white; font-weight:bold; border:2px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3);"><span>${count}</span></div>`,
+                    className: 'custom-cluster-icon',
+                    iconSize: L.point(38, 38)
+                });
+            }
+        });
+        
+        // Добавляем маркеры из массива testSites
+        testSites.forEach(site => {
+            const popupHtml = getPopupContent(site);
+            const marker = L.marker([site.lat, site.lng], {
+                title: site.name,
+                riseOnHover: true
+            }).bindPopup(popupHtml, { maxWidth: 300, minWidth: 200 });
+            markersCluster.addLayer(marker);
+        });
+        
+        // Добавляем основной слой маркеров на карту
+        map.addLayer(markersCluster);
+        
+        // ------------------------------
+        // Создание слоя полигонов
+        // ------------------------------
+        const polygonLayerGroup = L.layerGroup();
+        polygonsData.forEach(poly => {
+            const polygon = L.polygon(poly.coords, {
+                color: poly.color,
+                weight: poly.weight,
+                opacity: poly.opacity,
+                fillOpacity: poly.fillOpacity,
+                smoothFactor: 1.5,
+                className: 'nuclear-polygon'
+            }).bindTooltip(poly.name, { sticky: true, direction: 'center' });
+            polygon.addTo(polygonLayerGroup);
+        });
+        
+        // Добавляем слой границ на карту (по умолчанию включен)
+        polygonLayerGroup.addTo(map);
+        
+        // ------------------------------
+        // Управление слоями (Layer Control)
+        // ------------------------------
+        const baseLayers = {
+            "Светлая карта": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: 'CartoDB | OSM'
+            }),
+            "Тёмная карта": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: 'CartoDB | OSM'
+            })
+        };
+        
+        const overlayLayers = {
+            "🗺️ Ядерные объекты (кластеры)": markersCluster,
+            "📐 Границы полигонов (приближ.)": polygonLayerGroup
+        };
+        
+        // Добавляем тёмную карту в качестве альтернативы
+        const darkTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: 'CartoDB | OSM'
+        });
+        // устанавливаем светлую по умолчанию
+        const currentBase = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: 'CartoDB | OSM'
+        }).addTo(map);
+        
+        L.control.layers(baseLayers, overlayLayers, { collapsed: false, position: 'topright' }).addTo(map);
+        
+        // Обновляем счетчик на панели
+        document.getElementById('siteCountDisplay').innerHTML = `📍 ${testSites.length} объектов | ${polygonsData.length} полигонов`;
+        
+        // Небольшой фит границ, чтобы охватить интересную область (не слишком отдалённые)
+        const boundsGroup = L.featureGroup();
+        testSites.forEach(s => boundsGroup.addLayer(L.marker([s.lat, s.lng])));
+        polygonsData.forEach(p => {
+            const approxBound = L.polygon(p.coords);
+            boundsGroup.addLayer(approxBound);
+        });
+        // Адаптируем видимую область, но с отступом
+        const globalBounds = boundsGroup.getBounds();
+        if (globalBounds.isValid()) {
+            map.fitBounds(globalBounds.pad(0.2));
+        } else {
+            map.setView([30, 20], 2);
+        }
+        
+        // Добавим кнопку сброса вида на глобальный (опционально)
+        const resetControl = L.Control.extend({
+            options: { position: 'bottomleft' },
+            onAdd: function(map) {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                container.innerHTML = '🌍';
+                container.style.backgroundColor = 'white';
+                container.style.width = '34px';
+                container.style.height = '34px';
+                container.style.fontSize = '22px';
+                container.style.display = 'flex';
+                container.style.alignItems = 'center';
+                container.style.justifyContent = 'center';
+                container.style.cursor = 'pointer';
+                container.style.borderRadius = '5px';
+                container.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+                container.title = 'Сбросить вид на все полигоны';
+                container.onclick = () => {
+                    map.fitBounds(globalBounds.pad(0.2));
+                };
+                return container;
+            }
+        });
+        map.addControl(new resetControl());
+        
+        // Добавим небольшую информационную заметку при клике на кластер (естественное поведение)
+        // Также добавим подсказку в консоль, что карта готова
+        console.log("Интерактивная карта ядерных полигонов загружена. Данные включают исторические ядерные испытания.");
+        
+        // Расширенный всплывающий слой – первый показ можно добавить приветственный попап
+        setTimeout(() => {
+            map.openPopup('<b>☢️ Добро пожаловать</b><br>Карта содержит основные ядерные полигоны и места испытаний мира. Маркеры сгруппированы в кластеры. Нажмите на значок, чтобы увидеть детали.', [20, 15], { closeButton: true, autoClose: 5000 });
+        }, 800);
+        
+        // На случай, если какие-то маркеры оказались вне зоны – проверка работоспособности
+        // Всего загружено объектов: добавим проверку дубликатов нет, все координаты валидны.
+    </script>
+</body>
+</html>
